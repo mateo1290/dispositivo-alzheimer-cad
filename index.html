@@ -131,10 +131,10 @@
         <div class="controls-info">
           <h3>Controles</h3>
           <ul>
-            <li><span class="key">W</span> / <span class="key">S</span> — Adelante / Atrás</li>
-            <li><span class="key">A</span> / <span class="key">D</span> — Mover a la Izquierda / Derecha</li>
-            <li><span class="key">Mouse</span> — Girar la Cámara</li>
-            <li><span class="key">E</span> / <span class="key">Clic</span> — Activar Pulsera</li>
+            <li><span class="key">W</span> <span class="key">A</span> <span class="key">S</span> <span class="key">D</span> — Moverse libremente</li>
+            <li><span class="key">Espacio</span> — Saltar</li>
+            <li><span class="key">Clic Der. + Mover</span> — Orientar cámara (Estilo Roblox)</li>
+            <li><span class="key">E</span> / <span class="key">Clic Izq.</span> — Activar Pulsera</li>
           </ul>
         </div>
       </header>
@@ -170,12 +170,23 @@
     let keys = {};
     let isVR = false;
     let hasInteracted = false;
-    const cameraOffset = new THREE.Vector3(0, 3.5, 6);
+
+    // Física de salto
+    let velocityY = 0;
+    const gravity = -18;
+    const jumpStrength = 7.5;
+    let isGrounded = true;
+
+    // Control de cámara estilo Roblox (Clic Derecho)
+    let isRightMouseDown = false;
 
     init();
     animate();
 
     function init() {
+      // Desactivar menú contextual con clic derecho
+      document.addEventListener('contextmenu', e => e.preventDefault());
+
       // Cielo Azul claro y niebla clara
       scene = new THREE.Scene();
       scene.background = new THREE.Color(0x70c5ce);
@@ -183,7 +194,7 @@
 
       // Cámara
       camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 200);
-      camera.position.copy(cameraOffset);
+      camera.position.set(0, 3.5, 6);
 
       // Renderer
       renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
@@ -194,11 +205,16 @@
       renderer.xr.enabled = true;
       CANVAS_CONTAINER.appendChild(renderer.domElement);
 
-      // Orbit Controls (se actualiza para seguir al personaje)
+      // Orbit Controls (Configurados para rotar solo con Clic Derecho al estilo Roblox)
       controls = new OrbitControls(camera, renderer.domElement);
       controls.enableDamping = true;
       controls.dampingFactor = 0.08;
       controls.maxPolarAngle = Math.PI / 2 - 0.01;
+      controls.mouseButtons = {
+        LEFT: null,
+        MIDDLE: THREE.MOUSE.DOLLY,
+        RIGHT: THREE.MOUSE.ROTATE
+      };
 
       // Iluminación Natural Solar
       const ambient = new THREE.AmbientLight(0xffffff, 0.8);
@@ -211,14 +227,15 @@
       sun.position.set(30, 50, 20);
       sun.castShadow = true;
       sun.shadow.mapSize.set(2048, 2048);
-      const d = 30;
+      const d = 35;
       sun.shadow.camera.left = -d; sun.shadow.camera.right = d;
       sun.shadow.camera.top = d; sun.shadow.camera.bottom = -d;
       scene.add(sun);
 
-      // Piso de Césped Verde
+      // Entorno: Césped, Camino, Mesas y Árboles
       createGrassFloor();
       createFurniture();
+      createTrees();
 
       // Personaje con Piernas
       createPlayer();
@@ -232,23 +249,33 @@
       vrBtn.id = 'vr-button';
       document.body.appendChild(vrBtn);
 
+      // Eventos
       window.addEventListener('resize', onResize, false);
-      window.addEventListener('keydown', (e) => keys[e.key.toLowerCase()] = true);
+      window.addEventListener('keydown', (e) => {
+        keys[e.key.toLowerCase()] = true;
+        if (e.code === 'Space' && isGrounded) {
+          velocityY = jumpStrength;
+          isGrounded = false;
+        }
+      });
       window.addEventListener('keyup', (e) => keys[e.key.toLowerCase()] = false);
-      window.addEventListener('pointerdown', () => { if (!isVR) interactWithBracelet(); });
+
+      window.addEventListener('pointerdown', (e) => {
+        if (e.button === 0 && !isVR) interactWithBracelet();
+      });
       window.addEventListener('keydown', (e) => { if (e.key.toLowerCase() === 'e') interactWithBracelet(); });
     }
 
     // Piso Verde Césped Realista
     function createGrassFloor() {
-      const geo = new THREE.PlaneGeometry(120, 120);
+      const geo = new THREE.PlaneGeometry(140, 140);
       const mat = new THREE.MeshStandardMaterial({ color: 0x4baa2d, roughness: 0.85, metalness: 0.05 });
       const ground = new THREE.Mesh(geo, mat);
       ground.rotation.x = -Math.PI / 2;
       ground.receiveShadow = true;
       scene.add(ground);
 
-      const pathGeo = new THREE.PlaneGeometry(8, 120);
+      const pathGeo = new THREE.PlaneGeometry(8, 140);
       const pathMat = new THREE.MeshStandardMaterial({ color: 0xa3a3a3, roughness: 0.6 });
       const path = new THREE.Mesh(pathGeo, pathMat);
       path.rotation.x = -Math.PI / 2;
@@ -257,7 +284,7 @@
       scene.add(path);
     }
 
-    // Mesas y Sillas
+    // Múltiples Juegos de Mesas y Sillas
     function createFurniture() {
       const woodMat = new THREE.MeshStandardMaterial({ color: 0x8b5a2b, roughness: 0.6 });
       const metalMat = new THREE.MeshStandardMaterial({ color: 0x222222, metalness: 0.8, roughness: 0.2 });
@@ -296,12 +323,49 @@
         scene.add(group);
       }
 
-      buildSet(-6, -4);
-      buildSet(6, 4);
-      buildSet(-7, 8);
+      // Distribución de mesas por el mapa
+      const positions = [
+        [-6, -4], [6, 4], [-8, 8], [8, -10],
+        [-12, -15], [12, -18], [-10, 18], [10, 20],
+        [-18, 2], [16, -2]
+      ];
+      positions.forEach(pos => buildSet(pos[0], pos[1]));
     }
 
-    // Personaje con Piernas
+    // Árboles Decorativos
+    function createTrees() {
+      const trunkMat = new THREE.MeshStandardMaterial({ color: 0x5a3d28, roughness: 0.9 });
+      const foliageMat = new THREE.MeshStandardMaterial({ color: 0x2d7d32, roughness: 0.6 });
+
+      function buildTree(x, z) {
+        const group = new THREE.Group();
+        // Tronco
+        const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.45, 2.8), trunkMat);
+        trunk.position.y = 1.4; trunk.castShadow = true;
+        group.add(trunk);
+
+        // Copa de follaje (Conos superpuestos)
+        [2.6, 3.6, 4.4].forEach((posY, idx) => {
+          const radius = 1.6 - idx * 0.35;
+          const foliage = new THREE.Mesh(new THREE.ConeGeometry(radius, 1.8, 8), foliageMat);
+          foliage.position.y = posY; foliage.castShadow = true;
+          group.add(foliage);
+        });
+
+        group.position.set(x, 0, z);
+        scene.add(group);
+      }
+
+      // Bosque repartido
+      const treePositions = [
+        [-15, -8], [-18, -16], [-12, -25], [15, -12], [20, -22],
+        [-16, 12], [-22, 22], [14, 12], [22, 25], [18, -5],
+        [-25, -2], [25, 5], [-5, -30], [6, -32], [-8, 30]
+      ];
+      treePositions.forEach(p => buildTree(p[0], p[1]));
+    }
+
+    // Personaje
     function createPlayer() {
       playerGroup = new THREE.Group();
       scene.add(playerGroup);
@@ -393,7 +457,7 @@
       setTimeout(() => TOAST.classList.remove('active'), 3500);
     }
 
-    // Animación y Seguimiento de Cámara
+    // Bucle Principal de Animación
     function animate() {
       renderer.setAnimationLoop(() => {
         const dt = clock.getDelta();
@@ -402,39 +466,57 @@
         isVR = renderer.xr.isPresenting;
 
         if (playerGroup) {
-          const moveSpeed = 3.5;
-          let moveX = 0;
-          let moveZ = 0;
+          // Física de Gravedad y Salto
+          velocityY += gravity * dt;
+          playerGroup.position.y += velocityY * dt;
 
-          // Movimiento Directo (A/D = Izquierda/Derecha, W/S = Adelante/Atrás)
-          if (keys['w'] || keys['arrowup']) moveZ -= moveSpeed * dt;
-          if (keys['s'] || keys['arrowdown']) moveZ += moveSpeed * dt;
-          if (keys['a'] || keys['arrowleft']) moveX -= moveSpeed * dt;
-          if (keys['d'] || keys['arrowright']) moveX += moveSpeed * dt;
+          if (playerGroup.position.y <= 0) {
+            playerGroup.position.y = 0;
+            velocityY = 0;
+            isGrounded = true;
+          }
 
-          if (moveX !== 0 || moveZ !== 0) {
-            playerGroup.position.x += moveX;
-            playerGroup.position.z += moveZ;
+          const moveSpeed = 3.8;
+          let inputForward = 0;
+          let inputSide = 0;
 
-            // Rotación suave del personaje hacia la dirección donde camina
-            const targetAngle = Math.atan2(moveX, moveZ);
-            playerGroup.rotation.y = targetAngle;
+          if (keys['w'] || keys['arrowup']) inputForward += 1;
+          if (keys['s'] || keys['arrowdown']) inputForward -= 1;
+          if (keys['a'] || keys['arrowleft']) inputSide -= 1;
+          if (keys['d'] || keys['arrowright']) inputSide += 1;
+
+          if (inputForward !== 0 || inputSide !== 0) {
+            // Obtener ángulo horizontal de la cámara para orientar el movimiento
+            const camAngle = Math.atan2(
+              camera.position.x - playerGroup.position.x,
+              camera.position.z - playerGroup.position.z
+            );
+
+            const moveAngle = Math.atan2(inputSide, inputForward);
+            const finalAngle = camAngle + moveAngle + Math.PI;
+
+            // Mover en relación a la visión de la cámara
+            playerGroup.position.x += Math.sin(finalAngle) * moveSpeed * dt;
+            playerGroup.position.z += Math.cos(finalAngle) * moveSpeed * dt;
+
+            // Rotar suavemente el personaje hacia la dirección en la que camina
+            playerGroup.rotation.y = finalAngle;
 
             // Animación de caminata
-            const walkCycle = Math.sin(t * 12);
-            leftLeg.rotation.x = walkCycle * 0.6;
-            rightLeg.rotation.x = -walkCycle * 0.6;
-            leftArm.rotation.x = -walkCycle * 0.5;
-            rightArm.rotation.x = walkCycle * 0.5;
+            const walkCycle = Math.sin(t * 14);
+            leftLeg.rotation.x = walkCycle * 0.65;
+            rightLeg.rotation.x = -walkCycle * 0.65;
+            leftArm.rotation.x = -walkCycle * 0.55;
+            rightArm.rotation.x = walkCycle * 0.55;
           } else {
             leftLeg.rotation.x = 0; rightLeg.rotation.x = 0;
             leftArm.rotation.x = 0; rightArm.rotation.x = 0;
           }
 
-          // CÁMARA SEGUIDORA DIPLOMÁTICA
-          const targetCamPos = playerGroup.position.clone().add(cameraOffset);
-          camera.position.lerp(targetCamPos, 0.1);
-          controls.target.lerp(playerGroup.position.clone().add(new THREE.Vector3(0, 1.2, 0)), 0.1);
+          // Seguir al personaje conservando el ángulo y distancia fijados por el ratón
+          const camOffset = camera.position.clone().sub(controls.target);
+          controls.target.copy(playerGroup.position).add(new THREE.Vector3(0, 1.2, 0));
+          camera.position.copy(controls.target).add(camOffset);
         }
 
         controls.update();
