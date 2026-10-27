@@ -2,88 +2,578 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Dispositivo Asistente de Orientación y Monitoreo — Alzheimer</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Juego Interactivo — Pulsera Asistente Alzheimer (WebXR / Three.js)</title>
   <style>
-    :root { --primary:#1b3a4b; --accent:#4f9caf; --bg:#f6f9fb; --surface:#fff; --text:#222; --muted:#556; --radius:16px; --shadow:0 12px 40px rgba(27,58,75,0.08); }
-    * { box-sizing:border-box; margin:0; padding:0; }
-    body { font-family:'Inter',system-ui,sans-serif; background:var(--bg); color:var(--text); line-height:1.55; }
-    header { background:linear-gradient(135deg,#11323d 0%,#1b4a5f 100%); color:#fff; padding:80px 20px 100px; text-align:center; position:relative; overflow:hidden; }
-    header::after { content:''; position:absolute; inset:0; background:url('data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'none\' fill-rule=\'evenodd\'%3E%3Cg fill=\'%23ffffff\' fill-opacity=\'0.05\'%3E%3Cpath d=\'M36 34v-4h-2v4h-2v2h2v4h2v-4h2v-2h-2zm0-30V0h-2v4h-2v2h2v4h2V6h2V4h-2z\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E'); pointer-events:none; }
-    header h1 { font-family:'Playfair Display',Georgia,serif; font-size:clamp(2.2rem,5vw,3.6rem); letter-spacing:-0.03em; margin-bottom:12px; position:relative; z-index:1; }
-    header .subtitle { max-width:640px; margin:0 auto; opacity:0.85; font-size:1.05rem; position:relative; z-index:1; }
-    .badge { display:inline-block; background:rgba(255,255,255,0.12); border:1px solid rgba(255,255,255,0.2); border-radius:999px; padding:6px 14px; font-size:0.8rem; margin-top:24px; position:relative; z-index:1; letter-spacing:0.04em; text-transform:uppercase; }
-    main { max-width:980px; margin:-60px auto 0; padding:0 20px 100px; position:relative; z-index:2; }
-    .card { background:var(--surface); border-radius:var(--radius); box-shadow:var(--shadow); padding:36px; margin-bottom:28px; border:1px solid rgba(0,0,0,0.04); }
-    .card h2 { font-family:'Playfair Display',Georgia,serif; font-size:1.6rem; color:var(--primary); margin-bottom:16px; display:flex; align-items:center; gap:12px; }
-    .card h2 .num { width:32px; height:32px; display:inline-flex; align-items:center; justify-content:center; background:var(--accent); color:#fff; border-radius:50%; font-size:0.85rem; font-family:'Inter',sans-serif; font-weight:800; flex-shrink:0; }
-    .card img { width:100%; border-radius:12px; border:1px solid rgba(0,0,0,0.06); object-fit:cover; margin-top:16px; }
-    .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:16px; margin-top:16px; }
-    .grid img { height:220px; object-fit:cover; transition:transform .2s ease; }
-    .grid img:hover { transform:scale(1.01); }
-    a { color:var(--accent); text-decoration:none; font-weight:600; }
-    a:hover { text-decoration:underline; }
-    .meta { color:var(--muted); font-size:0.95rem; margin-top:4px; }
-    .section-divider { height:2px; width:48px; background:var(--accent); border-radius:999px; margin:8px 0 20px; }
-    footer { text-align:center; padding:40px 20px; color:var(--muted); font-size:0.85rem; border-top:1px solid rgba(0,0,0,0.06); }
-    @media (max-width: 640px) { .card { padding:24px; } header { padding:60px 20px 80px; } }
+    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;600&display=swap');
+
+    :root {
+      --neon-cyan: #00f0ff;
+      --neon-rose: #ff2a6e;
+      --dark: #060b14;
+      --surface: rgba(255,255,255,0.04);
+      --glass: rgba(255,255,255,0.08);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; }
+
+    html, body {
+      width: 100%; height: 100%; overflow: hidden;
+      background: var(--dark); color: #eaf6ff; font-family: 'Inter', system-ui, sans-serif;
+    }
+
+    #canvas-container { position: relative; width: 100%; height: 100%; }
+    canvas { display: block; outline: none; }
+
+    /* HUD / Overlay */
+    .hud {
+      position: absolute; inset: 0; pointer-events: none; z-index: 10;
+      display: flex; flex-direction: column; justify-content: space-between;
+      padding: 24px;
+    }
+
+    .hud header {
+      display: flex; align-items: flex-start; justify-content: space-between; gap: 16px;
+      pointer-events: auto;
+    }
+
+    .logo-badge {
+      background: linear-gradient(135deg, rgba(0,240,255,0.12), rgba(255,42,110,0.08));
+      border: 1px solid rgba(0,240,255,0.25);
+      border-radius: 16px; padding: 14px 18px; backdrop-filter: blur(8px);
+      max-width: 420px; box-shadow: 0 8px 32px rgba(0,240,255,0.08);
+    }
+
+    .logo-badge h1 {
+      font-family: 'Orbitron', system-ui, sans-serif; font-size: clamp(1.1rem, 2.4vw, 1.6rem);
+      letter-spacing: 0.02em; color: #fff; line-height: 1.15;
+      text-shadow: 0 0 20px rgba(0,240,255,0.35);
+    }
+
+    .logo-badge h1 .accent { color: var(--neon-cyan); }
+    .logo-badge p { margin-top: 6px; font-size: 0.82rem; color: rgba(255,255,255,0.7); }
+
+    .badge-row {
+      display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap;
+    }
+
+    .badge-row span {
+      font-size: 0.7rem; padding: 4px 10px; border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.12); background: rgba(255,255,255,0.04);
+      color: rgba(255,255,255,0.75); letter-spacing: 0.03em;
+    }
+
+    /* Controls info */
+    .controls-info {
+      background: var(--surface); border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 14px; padding: 14px 18px; backdrop-filter: blur(8px);
+      max-width: 300px; pointer-events: auto; box-shadow: 0 8px 32px rgba(0,0,0,0.35);
+    }
+
+    .controls-info h3 { font-family: 'Orbitron', sans-serif; font-size: 0.95rem; color: var(--neon-cyan); margin-bottom: 6px; }
+    .controls-info ul { list-style: none; font-size: 0.78rem; color: rgba(255,255,255,0.75); line-height: 1.45; }
+    .controls-info li { display: flex; align-items: center; gap: 8px; margin: 2px 0; }
+    .key { display: inline-flex; align-items: center; justify-content: center; min-width: 22px; height: 22px; border-radius: 6px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); font-size: 0.7rem; font-family: monospace; color: #fff; }
+
+    /* Message toast */
+    .message-toast {
+      position: absolute; left: 50%; bottom: 100px; transform: translateX(-50%) translateY(20px);
+      background: linear-gradient(135deg, rgba(255,42,110,0.95), rgba(255,42,110,0.85));
+      border: 1px solid rgba(255,42,110,0.4);
+      border-radius: 16px; padding: 22px 28px; color: #fff;
+      max-width: 520px; width: calc(100% - 40px);
+      font-size: 1rem; line-height: 1.4; text-align: center;
+      box-shadow: 0 0 40px rgba(255,42,110,0.35), inset 0 1px 0 rgba(255,255,255,0.1);
+      opacity: 0; pointer-events: none; transition: opacity 0.35s ease, transform 0.35s ease;
+      z-index: 20;
+    }
+
+    .message-toast.active { opacity: 1; transform: translateX(-50%) translateY(0); pointer-events: auto; }
+
+    .message-toast .title { font-family: 'Orbitron', sans-serif; font-weight: 700; font-size: 1.15rem; letter-spacing: 0.04em; text-transform: uppercase; margin-bottom: 6px; }
+    .message-toast .subtitle { font-size: 0.85rem; opacity: 0.9; }
+
+    /* VR Button */
+    #vr-button { pointer-events: auto; }
+
+    /* Floating interaction hint */
+    .interaction-hint {
+      position: absolute; left: 50%; bottom: 24px; transform: translateX(-50%);
+      pointer-events: none; z-index: 15; text-align: center;
+      opacity: 0.7; transition: opacity 0.3s ease;
+    }
+    .interaction-hint.hidden { opacity: 0; }
+    .interaction-hint .icon {
+      width: 56px; height: 56px; border: 2px solid var(--neon-cyan);
+      border-radius: 50%; display: inline-flex; align-items: center; justify-content: center;
+      margin-bottom: 8px; box-shadow: 0 0 20px rgba(0,240,255,0.35);
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse { 0%,100%{ box-shadow: 0 0 20px rgba(0,240,255,0.35); } 50%{ box-shadow: 0 0 30px rgba(0,240,255,0.6); } }
+    .interaction-hint p { font-size: 0.8rem; color: rgba(255,255,255,0.8); letter-spacing: 0.02em; }
+
+    /* Footer link */
+    .bottom-link {
+      position: absolute; bottom: 24px; right: 24px; z-index: 10; pointer-events: auto;
+      background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 12px; padding: 8px 14px; color: rgba(255,255,255,0.75); font-size: 0.75rem; text-decoration: none; transition: background 0.2s ease;
+    }
+    .bottom-link:hover { background: rgba(0,240,255,0.1); color: #fff; }
   </style>
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+    }
+  }
+  </script>
 </head>
 <body>
-  <header>
-    <div class="badge">Entrega V — Diseño CAD + Juego AR/VR</div>
-    <h1>Dispositivo Asistente de Orientación y Monitoreo para Pacientes con Alzheimer</h1>
-    <p class="subtitle">Proyecto de diseño electrónico que integra modelado CAD, impresión 3D, rediseño con IA y una experiencia interactiva en realidad mixta.</p>
-  </header>
+  <div id="canvas-container">
+    <div class="hud">
+      <header>
+        <div class="logo-badge">
+          <h1>Juego Interactivo <span class="accent">Pulsera Asistente</span></h1>
+          <p>Dispositivo médico portátil para pacientes con Alzheimer — experiencia WebXR</p>
+          <div class="badge-row">
+            <span>WebXR</span><span>Three.js</span><span>VR / AR</span><span>Asistencia</span>
+          </div>
+        </div>
+        <div class="controls-info">
+          <h3>Controles</h3>
+          <ul>
+            <li><span class="key">W</span> / <span class="key">S</span> / <span class="key">A</span> / <span class="key">D</span> o <span class="key">↑</span> <span class="key">↓</span> <span class="key">←</span> <span class="key">→</span> — Caminar</li>
+            <li><span class="key">Mouse</span> — Mirar</li>
+            <li><span class="key">E</span> / <span class="key">Clic</span> — Interactuar con la pulsera</li>
+            <li><span class="key">VR</span> — Iniciar experiencia inmersiva</li>
+          </ul>
+        </div>
+      </header>
+    </div>
 
-  <main>
-    <section class="card">
-      <h2><span class="num">01</span> Caja Generada en MakerCase (Dummie)</h2>
-      <div class="section-divider"></div>
-      <p><strong>Dimensiones:</strong> 80 mm × 50 mm × 30 mm</p>
-      <p><strong>Peso estimado:</strong> 150 g</p>
-      <p><strong>Archivos:</strong> <a href="caja_makercase.svg">caja_makercase.svg</a> / <a href="caja_makercase.dxf">caja_makercase.dxf</a></p>
-      <img src="imagenes/makercase_dummie.png" alt="Dummie MakerCase" loading="lazy" />
-    </section>
+    <div class="interaction-hint" id="hint">
+      <div class="icon">✋</div>
+      <p>Acércate y presiona la pulsera médica para activar asistencia</p>
+    </div>
 
-    <section class="card">
-      <h2><span class="num">02</span> Diseño a Mano del Proyecto</h2>
-      <div class="section-divider"></div>
-      <p>Boceto individual realizado a mano para la carcasa y distribución de componentes del dispositivo asistente.</p>
-      <img src="imagenes/diseno_mano.jpg" alt="Diseño a Mano" loading="lazy" />
-    </section>
+    <a class="bottom-link" href="README.md" target="_blank">Ver README.md</a>
+  </div>
 
-    <section class="card">
-      <h2><span class="num">03</span> Rediseño con Inteligencia Artificial</h2>
-      <div class="section-divider"></div>
-      <p><strong>Prompt utilizado:</strong> <em>"Genera una carcasa ergonómica, estética e industrial para un dispositivo médico portátil enfocado en pacientes con Alzheimer..."</em></p>
-      <img src="imagenes/diseno_ia.png" alt="Rediseño IA" loading="lazy" />
-    </section>
+  <div id="message-toast" class="message-toast">
+    <div class="title">Asistencia Activada</div>
+    <div class="subtitle">La pulsera médica ha emitido una señal de auxilio. El sistema notifica a los cuidadores y activa la iluminación de orientación para pacientes con Alzheimer.</div>
+  </div>
 
-    <section class="card">
-      <h2><span class="num">04</span> Modelo 3D</h2>
-      <div class="section-divider"></div>
-      <p>Modelado 3D del dispositivo listo para impresión o visualización.</p>
-      <ul style="margin-top:8px; padding-left:18px; color:var(--muted);">
-        <li><a href="modelo_dispositivo.stl">modelo_dispositivo.stl</a></li>
-        <li><a href="modelo_dispositivo.gbl">modelo_dispositivo.gbl</a></li>
-        <li>Visualizador online: <a href="https://3dviewer.net" target="_blank" rel="noopener">3D Viewer Online</a></li>
-      </ul>
-    </section>
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+    import { STLLoader } from 'three/addons/loaders/STLLoader.js';
+    import { VRButton } from 'three/addons/webxr/VRButton.js';
 
-    <section class="card">
-      <h2><span class="num">05</span> Experiencia / Juego Interactivo AR/VR</h2>
-      <div class="section-divider"></div>
-      <p>Integración del modelo 3D en Arena.ai para visualización interactiva en Realidad Aumentada / Realidad Mixta (Meta Quest).</p>
-      <p><strong>Prompt utilizado:</strong> <em>"Quiero un juego interactivo de merged reality o mixed reality de la silla de ruedas/asistente adjunto. El juego debe permitir jugar con el dispositivo y que se genere una respuesta a la interacción del humano y al entorno generado donde interactúa"</em></p>
-      <p><strong>Enlace Arena.ai:</strong> <a href="#" onclick="alert('Configuración pendiente: agregar enlace de Arena.ai'); return false;">[Enlace pendiente]</a></p>
-      <img src="imagenes/arena_ai_demo.png" alt="Juego AR/VR" loading="lazy" />
-    </section>
-  </main>
+    // --------------------------------------------------
+    // Constants
+    // --------------------------------------------------
+    const CANVAS_CONTAINER = document.getElementById('canvas-container');
+    const HINT = document.getElementById('hint');
+    const TOAST = document.getElementById('message-toast');
 
-  <footer>
-    <p>Estudiante: Mateo Jiménez · Curso: Diseño Electrónico · <a href="README.md">Ver README.md</a></p>
-  </footer>
+    let scene, camera, renderer, controls;
+    let clock = new THREE.Clock();
+    let playerGroup, characterMesh, braceletMesh, braceletLight, braceletButton;
+    let floorGrid, groundPlane;
+    let keys = {};
+    let isVR = false;
+    let hasInteracted = false;
+
+    // --------------------------------------------------
+    // Init
+    // --------------------------------------------------
+    init();
+    animate();
+
+    function init() {
+      // Scene
+      scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x060b14);
+      scene.fog = new THREE.FogExp2(0x060b14, 0.015);
+
+      // Camera
+      camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 200);
+      camera.position.set(0, 2.2, 5);
+
+      // Renderer
+      renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.VSMShadowMap; // Better soft shadows
+      renderer.xr.enabled = true;
+      CANVAS_CONTAINER.appendChild(renderer.domElement);
+
+      // Orbit Controls (desktop / non-VR)
+      controls = new OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = true;
+      controls.dampingFactor = 0.05;
+      controls.target.set(0, 1.2, 0);
+      controls.maxPolarAngle = Math.PI / 2 - 0.05; // Prevent going under ground
+
+      // Lights
+      const ambient = new THREE.AmbientLight(0x8899aa, 0.35);
+      scene.add(ambient);
+
+      const hemi = new THREE.HemisphereLight(0xccddff, 0x223355, 0.45);
+      scene.add(hemi);
+
+      const sun = new THREE.DirectionalLight(0xfff5e6, 1.2);
+      sun.position.set(20, 30, 10);
+      sun.castShadow = true;
+      sun.shadow.mapSize.set(1024, 1024);
+      sun.shadow.bias = -0.001;
+      scene.add(sun);
+
+      // Environment floor
+      createFloor();
+      createDecor();
+
+      // Character / Player
+      createPlayer();
+
+      // Bracelet / Device (attached to player)
+      createBracelet();
+
+      // Load STL (fallback to geometric if empty or fails)
+      tryLoadSTL();
+
+      // VR button
+      const vrBtn = VRButton.createButton(renderer);
+      vrBtn.id = 'vr-button';
+      document.body.appendChild(vrBtn);
+
+      // Resize
+      window.addEventListener('resize', onResize, false);
+      // Keyboard
+      window.addEventListener('keydown', (e) => keys[e.key.toLowerCase()] = true);
+      window.addEventListener('keyup', (e) => keys[e.key.toLowerCase()] = false);
+      // Pointer / mouse click for interaction
+      window.addEventListener('pointerdown', (e) => {
+        if (!isVR) interactWithBracelet();
+      });
+      // Key 'e' interaction
+      window.addEventListener('keydown', (e) => {
+        if (e.key.toLowerCase() === 'e') interactWithBracelet();
+      });
+    }
+
+    // --------------------------------------------------
+    // Floor
+    // --------------------------------------------------
+    function createFloor() {
+      // Ground plane
+      const geo = new THREE.PlaneGeometry(80, 80);
+      const mat = new THREE.MeshStandardMaterial({
+        color: 0x0f1525,
+        roughness: 0.8,
+        metalness: 0.15,
+        emissive: 0x001122,
+        emissiveIntensity: 0.3
+      });
+      groundPlane = new THREE.Mesh(geo, mat);
+      groundPlane.rotation.x = -Math.PI / 2;
+      groundPlane.receiveShadow = true;
+      scene.add(groundPlane);
+
+      // Grid helper with glowing lines
+      const grid = new THREE.GridHelper(80, 40, 0x00f0ff, 0x082a36);
+      grid.position.y = 0.05;
+      scene.add(grid);
+
+      floorGrid = grid;
+    }
+
+    // --------------------------------------------------
+    // Decor
+    // --------------------------------------------------
+    function createDecor() {
+      // Some abstract geometric shapes representing a calm environment
+      const shapes = [
+        { type: 'sphere', pos: [-8, 0.8, -6], scale: 1.2, color: 0x00f0ff, emissive: 0x001a2e },
+        { type: 'sphere', pos: [10, 1.0, 4], scale: 1.6, color: 0xff2a6e, emissive: 0x2a0015 },
+        { type: 'box', pos: [6, 1.5, -10], scale: [2, 3, 2], color: 0xffffff, emissive: 0x111111 },
+        { type: 'cylinder', pos: [-10, 2, 5], scale: [1.2, 4, 1.2], color: 0x00f0aa, emissive: 0x002233 },
+      ];
+
+      shapes.forEach(s => {
+        let mesh;
+        if (s.type === 'sphere') {
+          mesh = new THREE.Mesh(new THREE.SphereGeometry(s.scale, 32, 32), new THREE.MeshStandardMaterial({
+            color: s.color, roughness: 0.3, metalness: 0.1, emissive: s.emissive || 0x000000, emissiveIntensity: 0.3
+          }));
+        } else if (s.type === 'box') {
+          mesh = new THREE.Mesh(new THREE.BoxGeometry(s.scale[0], s.scale[1], s.scale[2]), new THREE.MeshStandardMaterial({
+            color: s.color, roughness: 0.25, metalness: 0.15, emissive: s.emissive || 0x000000, emissiveIntensity: 0.3
+          }));
+        } else if (s.type === 'cylinder') {
+          mesh = new THREE.Mesh(new THREE.CylinderGeometry(s.scale[0], s.scale[0], s.scale[1], 24), new THREE.MeshStandardMaterial({
+            color: s.color, roughness: 0.3, metalness: 0.1, emissive: s.emissive || 0x000000, emissiveIntensity: 0.3
+          }));
+        }
+        mesh.position.set(...s.pos);
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+        scene.add(mesh);
+      });
+    }
+
+    // --------------------------------------------------
+    // Player / Character
+    // --------------------------------------------------
+    function createPlayer() {
+      playerGroup = new THREE.Group();
+      scene.add(playerGroup);
+      playerGroup.position.set(0, 0, 0);
+
+      // Body (capsule)
+      const bodyGeo = new THREE.CapsuleGeometry(0.35, 0.6, 8, 12);
+      const bodyMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.4, metalness: 0.2 });
+      characterMesh = new THREE.Mesh(bodyGeo, bodyMat);
+      characterMesh.position.y = 1.0;
+      characterMesh.castShadow = true;
+      playerGroup.add(characterMesh);
+
+      // Head
+      const headGeo = new THREE.SphereGeometry(0.28, 16, 16);
+      const headMat = new THREE.MeshStandardMaterial({ color: 0xf5d0b0, roughness: 0.25, metalness: 0.05 });
+      const head = new THREE.Mesh(headGeo, headMat);
+      head.position.y = 1.85;
+      head.castShadow = true;
+      playerGroup.add(head);
+
+      // Simple arm holding bracelet position reference
+      const armGeo = new THREE.BoxGeometry(0.12, 0.5, 0.12);
+      const armMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.35 });
+      const arm = new THREE.Mesh(armGeo, armMat);
+      arm.position.set(0.45, 1.15, 0);
+      arm.castShadow = true;
+      playerGroup.add(arm);
+
+      // Bracelet position reference (attached to arm area)
+      const braceletAnchor = new THREE.Object3D();
+      braceletAnchor.position.set(0.55, 1.25, 0);
+      playerGroup.add(braceletAnchor);
+    }
+
+    // --------------------------------------------------
+    // Bracelet / Medical Device
+    // --------------------------------------------------
+    function createBracelet() {
+      // Since modelo_dispositivo.stl is a placeholder, we build a geometric bracelet
+      // representing the medical device. It includes a torus band + sensor box + glow.
+
+      const group = new THREE.Group();
+
+      // Main band (torus)
+      const torusGeo = new THREE.TorusGeometry(0.28, 0.06, 12, 32);
+      const torusMat = new THREE.MeshStandardMaterial({
+        color: 0x00f0ff,
+        roughness: 0.2,
+        metalness: 0.9,
+        emissive: 0x003344,
+        emissiveIntensity: 0.5
+      });
+      const torus = new THREE.Mesh(torusGeo, torusMat);
+      torus.rotation.x = Math.PI / 2; // orient around wrist
+      torus.position.y = 0.02;
+      torus.castShadow = true;
+      group.add(torus);
+
+      // Sensor / button box
+      const sensorGeo = new THREE.BoxGeometry(0.22, 0.08, 0.14);
+      const sensorMat = new THREE.MeshStandardMaterial({
+        color: 0xff2a6e,
+        roughness: 0.25,
+        metalness: 0.6,
+        emissive: 0x3a0015,
+        emissiveIntensity: 0.6
+      });
+      braceletButton = new THREE.Mesh(sensorGeo, sensorMat);
+      braceletButton.position.set(0, 0.08, 0);
+      braceletButton.castShadow = true;
+      group.add(braceletButton);
+
+      // Light emitter on bracelet
+      braceletLight = new THREE.PointLight(0x00f0ff, 0, 8);
+      braceletLight.position.set(0, 0.05, 0);
+      group.add(braceletLight);
+
+      // Small decorative ring on top
+      const ringGeo = new THREE.TorusGeometry(0.18, 0.03, 8, 20);
+      const ringMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.15, metalness: 0.9 });
+      const ring = new THREE.Mesh(ringGeo, ringMat);
+      ring.rotation.x = Math.PI / 2;
+      ring.position.y = 0.05;
+      ring.castShadow = true;
+      group.add(ring);
+
+      // Add a label plane showing the device image reference
+      const labelGeo = new THREE.PlaneGeometry(0.35, 0.18);
+      const textureLoader = new THREE.TextureLoader();
+      const labelTexture = textureLoader.load('imagenes/diseno_ia.png');
+      labelTexture.colorSpace = THREE.SRGBColorSpace;
+      const labelMat = new THREE.MeshStandardMaterial({ map: labelTexture, roughness: 0.3, metalness: 0.1, transparent: true, opacity: 0.9 });
+      const label = new THREE.Mesh(labelGeo, labelMat);
+      label.position.set(0, 0.15, 0);
+      label.rotation.x = -Math.PI / 6;
+      group.add(label);
+
+      group.rotation.z = Math.PI / 8; // tilt slightly on wrist
+      group.scale.set(0.9, 0.9, 0.9);
+
+      // Attach to player
+      const anchor = playerGroup.children.find(c => c.name === 'bracelet-anchor') || new THREE.Object3D();
+      if (!anchor.name) anchor.name = 'bracelet-anchor';
+      anchor.add(group);
+      braceletMesh = group;
+    }
+
+    // --------------------------------------------------
+    // Try load STL
+    // --------------------------------------------------
+    function tryLoadSTL() {
+      const loader = new STLLoader();
+      loader.load('modelo_dispositivo.stl', (geometry) => {
+        // If STL loaded successfully and has vertices, replace bracelet mesh with it
+        if (geometry && geometry.attributes && geometry.attributes.position && geometry.attributes.position.count > 0) {
+          const mat = new THREE.MeshStandardMaterial({ color: 0x00f0ff, roughness: 0.25, metalness: 0.6, emissive: 0x001122, emissiveIntensity: 0.4 });
+          const stlMesh = new THREE.Mesh(geometry, mat);
+          stlMesh.scale.set(0.02, 0.02, 0.02);
+          stlMesh.rotation.x = -Math.PI / 2;
+          stlMesh.position.set(0, 0, 0);
+          stlMesh.castShadow = true;
+          // Replace geometric bracelet (keep group wrapper for light)
+          const parent = braceletMesh.parent;
+          const pos = braceletMesh.position.clone();
+          const rot = braceletMesh.rotation.clone();
+          const scale = braceletMesh.scale.clone();
+          parent.remove(braceletMesh);
+          parent.add(stlMesh);
+          stlMesh.position.copy(pos);
+          stlMesh.rotation.copy(rot);
+          stlMesh.scale.copy(scale);
+          braceletMesh = stlMesh;
+        }
+      }, undefined, (err) => {
+        console.log('STL no cargado (archivo vacío o faltante), usando modelo geométrico.');
+      });
+    }
+
+    // --------------------------------------------------
+    // Interaction
+    // --------------------------------------------------
+    function interactWithBracelet() {
+      if (isVR) {
+        // In VR, interaction is via controller or proximity; use a simple trigger
+        // We'll simulate interaction if user presses 'E' or clicks
+        triggerBraceletEffect();
+      } else {
+        triggerBraceletEffect();
+      }
+    }
+
+    function triggerBraceletEffect() {
+      hasInteracted = true;
+      HINT.classList.add('hidden');
+
+      // Light flash
+      const originalIntensity = braceletLight.intensity || 3;
+      braceletLight.intensity = 12;
+      braceletLight.color.setHex(0xffffff);
+      braceletLight.distance = 20;
+
+      // Color pulse on bracelet
+      if (braceletMesh && braceletMesh.material) {
+        const originalColor = braceletMesh.material.emissive ? braceletMesh.material.emissive.getHex() : 0x003344;
+        if (braceletMesh.material.emissive) braceletMesh.material.emissive.setHex(0xffffff);
+        if (braceletMesh.material.color) braceletMesh.material.color.setHex(0xffffff);
+
+        setTimeout(() => {
+          if (braceletMesh && braceletMesh.material) {
+            if (braceletMesh.material.emissive) braceletMesh.material.emissive.setHex(originalColor);
+            if (braceletMesh.material.color) braceletMesh.material.color.setHex(0x00f0ff);
+          }
+        }, 600);
+      }
+
+      // Restore light after pulse
+      setTimeout(() => {
+        braceletLight.intensity = originalIntensity;
+        braceletLight.color.setHex(0x00f0ff);
+        braceletLight.distance = 8;
+      }, 1800);
+
+      // Show message
+      TOAST.classList.add('active');
+      setTimeout(() => TOAST.classList.remove('active'), 3500);
+    }
+
+    // --------------------------------------------------
+    // Animation
+    // --------------------------------------------------
+    function animate() {
+      renderer.setAnimationLoop(() => {
+        const dt = clock.getDelta();
+        const t = clock.getElapsedTime();
+
+        // Update controls
+        controls.update();
+        isVR = renderer.xr.isPresenting;
+
+        // Character movement (keyboard)
+        if (playerGroup) {
+          const speed = 2.5;
+          const rotSpeed = 2.5;
+
+          if (keys['w'] || keys['arrowup']) {
+            playerGroup.translateZ(speed * dt);
+          }
+          if (keys['s'] || keys['arrowdown']) {
+            playerGroup.translateZ(-speed * dt);
+          }
+          if (keys['a'] || keys['arrowleft']) {
+            playerGroup.rotation.y += rotSpeed * dt;
+          }
+          if (keys['d'] || keys['arrowright']) {
+            playerGroup.rotation.y -= rotSpeed * dt;
+          }
+
+          // Make character face movement direction roughly
+          if (keys['w'] || keys['arrowup']) playerGroup.rotation.y = 0 + (keys['a'] ? 0.5 : 0) + (keys['d'] ? -0.5 : 0);
+          else if (keys['s'] || keys['arrowdown']) playerGroup.rotation.y = Math.PI;
+          else if (keys['a'] || keys['arrowleft']) playerGroup.rotation.y = Math.PI / 2;
+          else if (keys['d'] || keys['arrowright']) playerGroup.rotation.y = -Math.PI / 2;
+        }
+
+        // Floating bracelet animation (idle)
+        if (braceletMesh && !hasInteracted) {
+          braceletMesh.rotation.y = t * 0.8;
+          braceletMesh.position.y = Math.sin(t * 2) * 0.02;
+        }
+
+        // Update floor grid position subtly
+        if (floorGrid) floorGrid.position.y = 0.05 + Math.sin(t * 0.5) * 0.002;
+
+        renderer.render(scene, camera);
+      });
+    }
+
+    // --------------------------------------------------
+    // Resize
+    // --------------------------------------------------
+    function onResize() {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    }
+  </script>
 </body>
 </html>
