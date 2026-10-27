@@ -10,7 +10,7 @@
     :root {
       --neon-cyan: #00f0ff;
       --neon-rose: #ff2a6e;
-      --surface: rgba(10, 25, 47, 0.75);
+      --surface: rgba(10, 25, 47, 0.85);
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; }
@@ -129,11 +129,12 @@
           </div>
         </div>
         <div class="controls-info">
-          <h3>Controles</h3>
+          <h3>Controles (Estilo Roblox)</h3>
           <ul>
-            <li><span class="key">W</span> <span class="key">A</span> <span class="key">S</span> <span class="key">D</span> — Moverse libremente</li>
+            <li><span class="key">W</span> <span class="key">A</span> <span class="key">S</span> <span class="key">D</span> — Mover relativo a la cámara</li>
             <li><span class="key">Espacio</span> — Saltar</li>
-            <li><span class="key">Clic Der. + Mover</span> — Orientar cámara (Estilo Roblox)</li>
+            <li><span class="key">Clic Der. + Arrastrar</span> — Girar Cámara</li>
+            <li><span class="key">Rueda Ratón</span> — Zoom Cámara</li>
             <li><span class="key">E</span> / <span class="key">Clic Izq.</span> — Activar Pulsera</li>
           </ul>
         </div>
@@ -142,7 +143,7 @@
 
     <div class="interaction-hint" id="hint">
       <div class="icon">✋</div>
-      <p>Presiona E o haz Clic para activar la pulsera médica</p>
+      <p>Presiona E o Clic Izquierdo para activar la pulsera médica</p>
     </div>
 
     <a class="bottom-link" href="README.md" target="_blank">Ver README.md</a>
@@ -155,7 +156,6 @@
 
   <script type="module">
     import * as THREE from 'three';
-    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
     import { STLLoader } from 'three/addons/loaders/STLLoader.js';
     import { VRButton } from 'three/addons/webxr/VRButton.js';
 
@@ -163,38 +163,43 @@
     const HINT = document.getElementById('hint');
     const TOAST = document.getElementById('message-toast');
 
-    let scene, camera, renderer, controls;
+    let scene, camera, renderer;
     let clock = new THREE.Clock();
     let playerGroup, leftLeg, rightLeg, leftArm, rightArm;
     let braceletMesh, braceletLight;
     let keys = {};
     let isVR = false;
-    let hasInteracted = false;
 
-    // Física de salto
+    // Física del personaje
     let velocityY = 0;
-    const gravity = -18;
-    const jumpStrength = 7.5;
+    const gravity = -20;
+    const jumpStrength = 8.5;
     let isGrounded = true;
 
-    // Control de cámara estilo Roblox (Clic Derecho)
+    // Sistema de cámara estilo Roblox (Orbitador customizado)
     let isRightMouseDown = false;
+    let cameraYaw = 0;             // Ángulo horizontal
+    let cameraPitch = 0.3;         // Ángulo vertical
+    let cameraDistance = 7;        // Distancia al personaje
+    const minPitch = -0.1;
+    const maxPitch = 1.4;
+    const minDistance = 2;
+    const maxDistance = 20;
 
     init();
     animate();
 
     function init() {
-      // Desactivar menú contextual con clic derecho
+      // Bloquear menú contextual del clic derecho
       document.addEventListener('contextmenu', e => e.preventDefault());
 
-      // Cielo Azul claro y niebla clara
+      // Cielo Azul y niebla
       scene = new THREE.Scene();
       scene.background = new THREE.Color(0x70c5ce);
       scene.fog = new THREE.FogExp2(0x70c5ce, 0.008);
 
       // Cámara
-      camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 200);
-      camera.position.set(0, 3.5, 6);
+      camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 250);
 
       // Renderer
       renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
@@ -205,19 +210,8 @@
       renderer.xr.enabled = true;
       CANVAS_CONTAINER.appendChild(renderer.domElement);
 
-      // Orbit Controls (Configurados para rotar solo con Clic Derecho al estilo Roblox)
-      controls = new OrbitControls(camera, renderer.domElement);
-      controls.enableDamping = true;
-      controls.dampingFactor = 0.08;
-      controls.maxPolarAngle = Math.PI / 2 - 0.01;
-      controls.mouseButtons = {
-        LEFT: null,
-        MIDDLE: THREE.MOUSE.DOLLY,
-        RIGHT: THREE.MOUSE.ROTATE
-      };
-
-      // Iluminación Natural Solar
-      const ambient = new THREE.AmbientLight(0xffffff, 0.8);
+      // Luces
+      const ambient = new THREE.AmbientLight(0xffffff, 0.75);
       scene.add(ambient);
 
       const hemiLight = new THREE.HemisphereLight(0x70c5ce, 0x4baa2d, 0.6);
@@ -227,17 +221,17 @@
       sun.position.set(30, 50, 20);
       sun.castShadow = true;
       sun.shadow.mapSize.set(2048, 2048);
-      const d = 35;
+      const d = 40;
       sun.shadow.camera.left = -d; sun.shadow.camera.right = d;
       sun.shadow.camera.top = d; sun.shadow.camera.bottom = -d;
       scene.add(sun);
 
-      // Entorno: Césped, Camino, Mesas y Árboles
+      // Construir Mapa
       createGrassFloor();
       createFurniture();
       createTrees();
 
-      // Personaje con Piernas
+      // Personaje
       createPlayer();
 
       // Pulsera
@@ -249,34 +243,63 @@
       vrBtn.id = 'vr-button';
       document.body.appendChild(vrBtn);
 
-      // Eventos
-      window.addEventListener('resize', onResize, false);
+      // Control de teclado
       window.addEventListener('keydown', (e) => {
-        keys[e.key.toLowerCase()] = true;
+        keys[e.code] = true;
+        // Salto con barra espaciadora
         if (e.code === 'Space' && isGrounded) {
           velocityY = jumpStrength;
           isGrounded = false;
         }
+        if (e.code === 'KeyE') {
+          interactWithBracelet();
+        }
       });
-      window.addEventListener('keyup', (e) => keys[e.key.toLowerCase()] = false);
 
-      window.addEventListener('pointerdown', (e) => {
-        if (e.button === 0 && !isVR) interactWithBracelet();
+      window.addEventListener('keyup', (e) => {
+        keys[e.code] = false;
       });
-      window.addEventListener('keydown', (e) => { if (e.key.toLowerCase() === 'e') interactWithBracelet(); });
+
+      // Control de cámara estilo Roblox con Mouse
+      window.addEventListener('mousedown', (e) => {
+        if (e.button === 2) {
+          isRightMouseDown = true;
+        } else if (e.button === 0 && !isVR) {
+          interactWithBracelet();
+        }
+      });
+
+      window.addEventListener('mouseup', (e) => {
+        if (e.button === 2) isRightMouseDown = false;
+      });
+
+      window.addEventListener('mousemove', (e) => {
+        if (isRightMouseDown) {
+          cameraYaw -= e.movementX * 0.005;
+          cameraPitch += e.movementY * 0.005;
+          cameraPitch = Math.max(minPitch, Math.min(maxPitch, cameraPitch));
+        }
+      });
+
+      window.addEventListener('wheel', (e) => {
+        cameraDistance += e.deltaY * 0.008;
+        cameraDistance = Math.max(minDistance, Math.min(maxDistance, cameraDistance));
+      }, { passive: true });
+
+      window.addEventListener('resize', onResize, false);
     }
 
-    // Piso Verde Césped Realista
+    // Piso de Césped
     function createGrassFloor() {
-      const geo = new THREE.PlaneGeometry(140, 140);
+      const geo = new THREE.PlaneGeometry(160, 160);
       const mat = new THREE.MeshStandardMaterial({ color: 0x4baa2d, roughness: 0.85, metalness: 0.05 });
       const ground = new THREE.Mesh(geo, mat);
       ground.rotation.x = -Math.PI / 2;
       ground.receiveShadow = true;
       scene.add(ground);
 
-      const pathGeo = new THREE.PlaneGeometry(8, 140);
-      const pathMat = new THREE.MeshStandardMaterial({ color: 0xa3a3a3, roughness: 0.6 });
+      const pathGeo = new THREE.PlaneGeometry(8, 160);
+      const pathMat = new THREE.MeshStandardMaterial({ color: 0x9ca3af, roughness: 0.6 });
       const path = new THREE.Mesh(pathGeo, pathMat);
       path.rotation.x = -Math.PI / 2;
       path.position.y = 0.01;
@@ -284,14 +307,13 @@
       scene.add(path);
     }
 
-    // Múltiples Juegos de Mesas y Sillas
+    // Mesas y Sillas
     function createFurniture() {
       const woodMat = new THREE.MeshStandardMaterial({ color: 0x8b5a2b, roughness: 0.6 });
       const metalMat = new THREE.MeshStandardMaterial({ color: 0x222222, metalness: 0.8, roughness: 0.2 });
 
       function buildSet(x, z) {
         const group = new THREE.Group();
-        // Mesa
         const top = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.12, 1.4), woodMat);
         top.position.y = 1.0; top.castShadow = true; top.receiveShadow = true;
         group.add(top);
@@ -303,7 +325,6 @@
           group.add(leg);
         });
 
-        // Sillas
         [-0.9, 0.9].forEach(offset => {
           const chair = new THREE.Group();
           const seat = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.08, 0.6), woodMat);
@@ -323,28 +344,24 @@
         scene.add(group);
       }
 
-      // Distribución de mesas por el mapa
-      const positions = [
+      [
         [-6, -4], [6, 4], [-8, 8], [8, -10],
         [-12, -15], [12, -18], [-10, 18], [10, 20],
-        [-18, 2], [16, -2]
-      ];
-      positions.forEach(pos => buildSet(pos[0], pos[1]));
+        [-18, 2], [16, -2], [-15, -28], [15, 28]
+      ].forEach(pos => buildSet(pos[0], pos[1]));
     }
 
-    // Árboles Decorativos
+    // Árboles
     function createTrees() {
       const trunkMat = new THREE.MeshStandardMaterial({ color: 0x5a3d28, roughness: 0.9 });
       const foliageMat = new THREE.MeshStandardMaterial({ color: 0x2d7d32, roughness: 0.6 });
 
       function buildTree(x, z) {
         const group = new THREE.Group();
-        // Tronco
         const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.45, 2.8), trunkMat);
         trunk.position.y = 1.4; trunk.castShadow = true;
         group.add(trunk);
 
-        // Copa de follaje (Conos superpuestos)
         [2.6, 3.6, 4.4].forEach((posY, idx) => {
           const radius = 1.6 - idx * 0.35;
           const foliage = new THREE.Mesh(new THREE.ConeGeometry(radius, 1.8, 8), foliageMat);
@@ -356,13 +373,11 @@
         scene.add(group);
       }
 
-      // Bosque repartido
-      const treePositions = [
+      [
         [-15, -8], [-18, -16], [-12, -25], [15, -12], [20, -22],
         [-16, 12], [-22, 22], [14, 12], [22, 25], [18, -5],
         [-25, -2], [25, 5], [-5, -30], [6, -32], [-8, 30]
-      ];
-      treePositions.forEach(p => buildTree(p[0], p[1]));
+      ].forEach(p => buildTree(p[0], p[1]));
     }
 
     // Personaje
@@ -443,7 +458,6 @@
     }
 
     function interactWithBracelet() {
-      hasInteracted = true;
       HINT.classList.add('hidden');
       braceletLight.intensity = 10;
       braceletLight.color.setHex(0xffffff);
@@ -457,16 +471,16 @@
       setTimeout(() => TOAST.classList.remove('active'), 3500);
     }
 
-    // Bucle Principal de Animación
+    // Bucle Principal
     function animate() {
       renderer.setAnimationLoop(() => {
-        const dt = clock.getDelta();
+        const dt = Math.min(clock.getDelta(), 0.1);
         const t = clock.getElapsedTime();
 
         isVR = renderer.xr.isPresenting;
 
         if (playerGroup) {
-          // Física de Gravedad y Salto
+          // 1. APLICAR GRAVEDAD Y SALTO
           velocityY += gravity * dt;
           playerGroup.position.y += velocityY * dt;
 
@@ -476,50 +490,66 @@
             isGrounded = true;
           }
 
-          const moveSpeed = 3.8;
-          let inputForward = 0;
-          let inputSide = 0;
+          // 2. LECTURA DE CONTROLES
+          let moveForward = 0;
+          let moveSide = 0;
 
-          if (keys['w'] || keys['arrowup']) inputForward += 1;
-          if (keys['s'] || keys['arrowdown']) inputForward -= 1;
-          if (keys['a'] || keys['arrowleft']) inputSide -= 1;
-          if (keys['d'] || keys['arrowright']) inputSide += 1;
+          if (keys['KeyW'] || keys['ArrowUp']) moveForward += 1;
+          if (keys['KeyS'] || keys['ArrowDown']) moveForward -= 1;
+          if (keys['KeyA'] || keys['ArrowLeft']) moveSide -= 1;
+          if (keys['KeyD'] || keys['ArrowRight']) moveSide += 1;
 
-          if (inputForward !== 0 || inputSide !== 0) {
-            // Obtener ángulo horizontal de la cámara para orientar el movimiento
-            const camAngle = Math.atan2(
-              camera.position.x - playerGroup.position.x,
-              camera.position.z - playerGroup.position.z
-            );
+          // 3. MOVIMIENTO EN RELACIÓN A LA CÁMARA (Estilo Roblox)
+          if (moveForward !== 0 || moveSide !== 0) {
+            const moveSpeed = 4.5;
 
-            const moveAngle = Math.atan2(inputSide, inputForward);
-            const finalAngle = camAngle + moveAngle + Math.PI;
+            // Calcular dirección según orientación de la cámara
+            const moveAngle = Math.atan2(moveSide, moveForward);
+            const targetRotation = cameraYaw + moveAngle;
 
-            // Mover en relación a la visión de la cámara
-            playerGroup.position.x += Math.sin(finalAngle) * moveSpeed * dt;
-            playerGroup.position.z += Math.cos(finalAngle) * moveSpeed * dt;
+            playerGroup.position.x += Math.sin(targetRotation) * moveSpeed * dt;
+            playerGroup.position.z += Math.cos(targetRotation) * moveSpeed * dt;
 
-            // Rotar suavemente el personaje hacia la dirección en la que camina
-            playerGroup.rotation.y = finalAngle;
+            // Rotación suave hacia donde camina
+            let diff = targetRotation - playerGroup.rotation.y;
+            diff = Math.atan2(Math.sin(diff), Math.cos(diff));
+            playerGroup.rotation.y += diff * 12 * dt;
 
             // Animación de caminata
-            const walkCycle = Math.sin(t * 14);
-            leftLeg.rotation.x = walkCycle * 0.65;
-            rightLeg.rotation.x = -walkCycle * 0.65;
-            leftArm.rotation.x = -walkCycle * 0.55;
-            rightArm.rotation.x = walkCycle * 0.55;
+            if (isGrounded) {
+              const walkCycle = Math.sin(t * 15);
+              leftLeg.rotation.x = walkCycle * 0.7;
+              rightLeg.rotation.x = -walkCycle * 0.7;
+              leftArm.rotation.x = -walkCycle * 0.6;
+              rightArm.rotation.x = walkCycle * 0.6;
+            }
           } else {
-            leftLeg.rotation.x = 0; rightLeg.rotation.x = 0;
-            leftArm.rotation.x = 0; rightArm.rotation.x = 0;
+            // Reposo
+            if (isGrounded) {
+              leftLeg.rotation.x = 0; rightLeg.rotation.x = 0;
+              leftArm.rotation.x = 0; rightArm.rotation.x = 0;
+            }
           }
 
-          // Seguir al personaje conservando el ángulo y distancia fijados por el ratón
-          const camOffset = camera.position.clone().sub(controls.target);
-          controls.target.copy(playerGroup.position).add(new THREE.Vector3(0, 1.2, 0));
-          camera.position.copy(controls.target).add(camOffset);
+          // Pose en el aire al saltar
+          if (!isGrounded) {
+            leftLeg.rotation.x = -0.4;
+            rightLeg.rotation.x = 0.4;
+            leftArm.rotation.x = 0.3;
+            rightArm.rotation.x = -0.3;
+          }
+          // 4. POSICIONAMIENTO DE CÁMARA ESTILO ROBLOX
+          const playerHeadPos = playerGroup.position.clone().add(new THREE.Vector3(0, 1.5, 0));
+
+          // Coordenadas esféricas en base a cameraYaw, cameraPitch y cameraDistance
+          const cx = playerHeadPos.x + cameraDistance * Math.sin(cameraYaw) * Math.cos(cameraPitch);
+          const cy = playerHeadPos.y + cameraDistance * Math.sin(cameraPitch);
+          const cz = playerHeadPos.z + cameraDistance * Math.cos(cameraYaw) * Math.cos(cameraPitch);
+
+          camera.position.set(cx, cy, cz);
+          camera.lookAt(playerHeadPos);
         }
 
-        controls.update();
         renderer.render(scene, camera);
       });
     }
