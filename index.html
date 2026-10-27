@@ -10,21 +10,20 @@
     :root {
       --neon-cyan: #00f0ff;
       --neon-rose: #ff2a6e;
-      --dark: #060b14;
-      --surface: rgba(10, 25, 47, 0.65);
+      --surface: rgba(10, 25, 47, 0.75);
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; }
 
     html, body {
       width: 100%; height: 100%; overflow: hidden;
-      background: #87ceeb; color: #eaf6ff; font-family: 'Inter', system-ui, sans-serif;
+      background: #70c5ce; color: #eaf6ff; font-family: 'Inter', system-ui, sans-serif;
     }
 
     #canvas-container { position: relative; width: 100%; height: 100%; }
     canvas { display: block; outline: none; }
 
-    /* HUD / Overlay */
+    /* HUD */
     .hud {
       position: absolute; inset: 0; pointer-events: none; z-index: 10;
       display: flex; flex-direction: column; justify-content: space-between;
@@ -37,44 +36,39 @@
     }
 
     .logo-badge {
-      background: linear-gradient(135deg, rgba(0,240,255,0.2), rgba(10,25,47,0.75));
-      border: 1px solid rgba(0,240,255,0.4);
+      background: linear-gradient(135deg, rgba(0,240,255,0.25), rgba(10,25,47,0.85));
+      border: 1px solid rgba(0,240,255,0.5);
       border-radius: 16px; padding: 14px 18px; backdrop-filter: blur(10px);
-      max-width: 420px; box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+      max-width: 420px; box-shadow: 0 8px 32px rgba(0,0,0,0.3);
     }
 
     .logo-badge h1 {
       font-family: 'Orbitron', system-ui, sans-serif; font-size: clamp(1.1rem, 2.4vw, 1.6rem);
       letter-spacing: 0.02em; color: #fff; line-height: 1.15;
-      text-shadow: 0 0 15px rgba(0,240,255,0.5);
+      text-shadow: 0 0 15px rgba(0,240,255,0.6);
     }
 
     .logo-badge h1 .accent { color: var(--neon-cyan); }
     .logo-badge p { margin-top: 6px; font-size: 0.82rem; color: rgba(255,255,255,0.85); }
 
-    .badge-row {
-      display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap;
-    }
-
+    .badge-row { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
     .badge-row span {
       font-size: 0.7rem; padding: 4px 10px; border-radius: 999px;
-      border: 1px solid rgba(255,255,255,0.2); background: rgba(0,0,0,0.2);
+      border: 1px solid rgba(255,255,255,0.2); background: rgba(0,0,0,0.3);
       color: rgba(255,255,255,0.9); letter-spacing: 0.03em;
     }
 
-    /* Controls info */
     .controls-info {
       background: var(--surface); border: 1px solid rgba(255,255,255,0.2);
       border-radius: 14px; padding: 14px 18px; backdrop-filter: blur(10px);
-      max-width: 320px; pointer-events: auto; box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+      max-width: 320px; pointer-events: auto; box-shadow: 0 8px 32px rgba(0,0,0,0.3);
     }
 
     .controls-info h3 { font-family: 'Orbitron', sans-serif; font-size: 0.95rem; color: var(--neon-cyan); margin-bottom: 6px; }
     .controls-info ul { list-style: none; font-size: 0.78rem; color: rgba(255,255,255,0.9); line-height: 1.45; }
     .controls-info li { display: flex; align-items: center; gap: 8px; margin: 2px 0; }
-    .key { display: inline-flex; align-items: center; justify-content: center; min-width: 22px; height: 22px; border-radius: 6px; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); font-size: 0.7rem; font-family: monospace; color: #fff; }
+    .key { display: inline-flex; align-items: center; justify-content: center; min-width: 22px; height: 22px; border-radius: 6px; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); font-size: 0.7rem; font-family: monospace; color: #fff; }
 
-    /* Message toast */
     .message-toast {
       position: absolute; left: 50%; bottom: 100px; transform: translateX(-50%) translateY(20px);
       background: linear-gradient(135deg, rgba(255,42,110,0.95), rgba(180,20,80,0.95));
@@ -86,15 +80,12 @@
       opacity: 0; pointer-events: none; transition: opacity 0.35s ease, transform 0.35s ease;
       z-index: 20;
     }
-
     .message-toast.active { opacity: 1; transform: translateX(-50%) translateY(0); pointer-events: auto; }
-
     .message-toast .title { font-family: 'Orbitron', sans-serif; font-weight: 700; font-size: 1.15rem; letter-spacing: 0.04em; text-transform: uppercase; margin-bottom: 6px; }
     .message-toast .subtitle { font-size: 0.85rem; opacity: 0.95; }
 
     #vr-button { pointer-events: auto; }
 
-    /* Floating interaction hint */
     .interaction-hint {
       position: absolute; left: 50%; bottom: 24px; transform: translateX(-50%);
       pointer-events: none; z-index: 15; text-align: center;
@@ -102,7 +93,7 @@
     }
     .interaction-hint.hidden { opacity: 0; }
     .interaction-hint .icon {
-      width: 56px; height: 56px; border: 2px solid var(--neon-cyan); background: rgba(10,25,47,0.6);
+      width: 56px; height: 56px; border: 2px solid var(--neon-cyan); background: rgba(10,25,47,0.7);
       border-radius: 50%; display: inline-flex; align-items: center; justify-content: center;
       margin-bottom: 8px; box-shadow: 0 0 20px rgba(0,240,255,0.5);
       animation: pulse 2s infinite;
@@ -140,10 +131,10 @@
         <div class="controls-info">
           <h3>Controles</h3>
           <ul>
-            <li><span class="key">A</span> / <span class="key">D</span> o <span class="key">←</span> <span class="key">→</span> — Orientar / Girar personaje</li>
-            <li><span class="key">W</span> / <span class="key">S</span> o <span class="key">↑</span> <span class="key">↓</span> — Avanzar / Retroceder</li>
-            <li><span class="key">Mouse</span> — Girar cámara alrededor</li>
-            <li><span class="key">E</span> / <span class="key">Clic</span> — Activar pulsera</li>
+            <li><span class="key">W</span> / <span class="key">S</span> — Adelante / Atrás</li>
+            <li><span class="key">A</span> / <span class="key">D</span> — Mover a la Izquierda / Derecha</li>
+            <li><span class="key">Mouse</span> — Girar la Cámara</li>
+            <li><span class="key">E</span> / <span class="key">Clic</span> — Activar Pulsera</li>
           </ul>
         </div>
       </header>
@@ -179,19 +170,20 @@
     let keys = {};
     let isVR = false;
     let hasInteracted = false;
+    const cameraOffset = new THREE.Vector3(0, 3.5, 6);
 
     init();
     animate();
 
     function init() {
-      // Escena con cielo azul claro y niebla suave
+      // Cielo Azul claro y niebla clara
       scene = new THREE.Scene();
-      scene.background = new THREE.Color(0x87ceeb);
-      scene.fog = new THREE.FogExp2(0x87ceeb, 0.012);
+      scene.background = new THREE.Color(0x70c5ce);
+      scene.fog = new THREE.FogExp2(0x70c5ce, 0.008);
 
       // Cámara
       camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 200);
-      camera.position.set(0, 3, 6);
+      camera.position.copy(cameraOffset);
 
       // Renderer
       renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
@@ -202,50 +194,44 @@
       renderer.xr.enabled = true;
       CANVAS_CONTAINER.appendChild(renderer.domElement);
 
-      // Orbit Controls
+      // Orbit Controls (se actualiza para seguir al personaje)
       controls = new OrbitControls(camera, renderer.domElement);
       controls.enableDamping = true;
-      controls.dampingFactor = 0.05;
-      controls.target.set(0, 1.2, 0);
-      controls.maxPolarAngle = Math.PI / 2 - 0.02;
+      controls.dampingFactor = 0.08;
+      controls.maxPolarAngle = Math.PI / 2 - 0.01;
 
-      // Luces del sol y ambiente
-      const ambient = new THREE.AmbientLight(0xffffff, 0.65);
+      // Iluminación Natural Solar
+      const ambient = new THREE.AmbientLight(0xffffff, 0.8);
       scene.add(ambient);
 
-      const hemiLight = new THREE.HemisphereLight(0x87ceeb, 0x3a5f0b, 0.5);
+      const hemiLight = new THREE.HemisphereLight(0x70c5ce, 0x4baa2d, 0.6);
       scene.add(hemiLight);
 
-      const sun = new THREE.DirectionalLight(0xfff8e7, 1.3);
-      sun.position.set(25, 40, 15);
+      const sun = new THREE.DirectionalLight(0xfff5e6, 1.4);
+      sun.position.set(30, 50, 20);
       sun.castShadow = true;
       sun.shadow.mapSize.set(2048, 2048);
-      sun.shadow.camera.near = 0.5;
-      sun.shadow.camera.far = 100;
-      const d = 25;
-      sun.shadow.camera.left = -d;
-      sun.shadow.camera.right = d;
-      sun.shadow.camera.top = d;
-      sun.shadow.camera.bottom = -d;
+      const d = 30;
+      sun.shadow.camera.left = -d; sun.shadow.camera.right = d;
+      sun.shadow.camera.top = d; sun.shadow.camera.bottom = -d;
       scene.add(sun);
 
-      // Creación del piso de césped y del mobiliario
+      // Piso de Césped Verde
       createGrassFloor();
       createFurniture();
 
-      // Personaje con piernas y brazos
+      // Personaje con Piernas
       createPlayer();
 
-      // Pulsera médica
+      // Pulsera
       createBracelet();
       tryLoadSTL();
 
-      // VR button
+      // VR Button
       const vrBtn = VRButton.createButton(renderer);
       vrBtn.id = 'vr-button';
       document.body.appendChild(vrBtn);
 
-      // Eventos
       window.addEventListener('resize', onResize, false);
       window.addEventListener('keydown', (e) => keys[e.key.toLowerCase()] = true);
       window.addEventListener('keyup', (e) => keys[e.key.toLowerCase()] = false);
@@ -253,159 +239,109 @@
       window.addEventListener('keydown', (e) => { if (e.key.toLowerCase() === 'e') interactWithBracelet(); });
     }
 
-    // --------------------------------------------------
-    // Piso de césped verde realista
-    // --------------------------------------------------
+    // Piso Verde Césped Realista
     function createGrassFloor() {
-      // Plano base de césped
-      const geo = new THREE.PlaneGeometry(100, 100, 32, 32);
-      const mat = new THREE.MeshStandardMaterial({
-        color: 0x4baa2d,
-        roughness: 0.9,
-        metalness: 0.05
-      });
+      const geo = new THREE.PlaneGeometry(120, 120);
+      const mat = new THREE.MeshStandardMaterial({ color: 0x4baa2d, roughness: 0.85, metalness: 0.05 });
       const ground = new THREE.Mesh(geo, mat);
       ground.rotation.x = -Math.PI / 2;
       ground.receiveShadow = true;
       scene.add(ground);
 
-      // Grid decorativo suave
-      const grid = new THREE.GridHelper(100, 50, 0x2e7d1d, 0x3d8c24);
-      grid.position.y = 0.01;
-      scene.add(grid);
-
-      // Camino de piedra/adoquín central
-      const pathGeo = new THREE.PlaneGeometry(6, 100);
-      const pathMat = new THREE.MeshStandardMaterial({ color: 0x9ca3af, roughness: 0.7 });
+      const pathGeo = new THREE.PlaneGeometry(8, 120);
+      const pathMat = new THREE.MeshStandardMaterial({ color: 0xa3a3a3, roughness: 0.6 });
       const path = new THREE.Mesh(pathGeo, pathMat);
       path.rotation.x = -Math.PI / 2;
-      path.position.y = 0.02;
+      path.position.y = 0.01;
       path.receiveShadow = true;
       scene.add(path);
     }
 
-    // --------------------------------------------------
-    // Mobiliario realista (Mesas y Sillas)
-    // --------------------------------------------------
+    // Mesas y Sillas
     function createFurniture() {
       const woodMat = new THREE.MeshStandardMaterial({ color: 0x8b5a2b, roughness: 0.6 });
-      const metalMat = new THREE.MeshStandardMaterial({ color: 0x333333, metalness: 0.8, roughness: 0.3 });
+      const metalMat = new THREE.MeshStandardMaterial({ color: 0x222222, metalness: 0.8, roughness: 0.2 });
 
-      function buildTable(x, z) {
+      function buildSet(x, z) {
         const group = new THREE.Group();
-        // Tablero
+        // Mesa
         const top = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.12, 1.4), woodMat);
-        top.position.y = 1.0;
-        top.castShadow = true; top.receiveShadow = true;
+        top.position.y = 1.0; top.castShadow = true; top.receiveShadow = true;
         group.add(top);
 
-        // Patas
         const legGeo = new THREE.CylinderGeometry(0.05, 0.05, 1.0);
-        const positions = [[-1.0, 0.5, -0.5], [1.0, 0.5, -0.5], [-1.0, 0.5, 0.5], [1.0, 0.5, 0.5]];
-        positions.forEach(p => {
+        [[-1, 0.5, -0.5], [1, 0.5, -0.5], [-1, 0.5, 0.5], [1, 0.5, 0.5]].forEach(p => {
           const leg = new THREE.Mesh(legGeo, metalMat);
-          leg.position.set(...p);
-          leg.castShadow = true;
+          leg.position.set(...p); leg.castShadow = true;
           group.add(leg);
         });
+
+        // Sillas
+        [-0.9, 0.9].forEach(offset => {
+          const chair = new THREE.Group();
+          const seat = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.08, 0.6), woodMat);
+          seat.position.y = 0.55; seat.castShadow = true; chair.add(seat);
+          const back = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.5, 0.08), woodMat);
+          back.position.set(0, 0.8, -0.26); back.castShadow = true; chair.add(back);
+          [[-0.24, 0.275, -0.24], [0.24, 0.275, -0.24], [-0.24, 0.275, 0.24], [0.24, 0.275, 0.24]].forEach(lp => {
+            const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.55), metalMat);
+            leg.position.set(...lp); leg.castShadow = true; chair.add(leg);
+          });
+          chair.position.set(0, 0, offset);
+          chair.rotation.y = offset > 0 ? Math.PI : 0;
+          group.add(chair);
+        });
+
         group.position.set(x, 0, z);
         scene.add(group);
       }
 
-      function buildChair(x, z, rotY) {
-        const group = new THREE.Group();
-        // Asiento
-        const seat = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.08, 0.7), woodMat);
-        seat.position.y = 0.55;
-        seat.castShadow = true; seat.receiveShadow = true;
-        group.add(seat);
-
-        // Respaldar
-        const back = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.6, 0.08), woodMat);
-        back.position.set(0, 0.85, -0.31);
-        back.castShadow = true;
-        group.add(back);
-
-        // Patas
-        const legGeo = new THREE.CylinderGeometry(0.04, 0.04, 0.55);
-        const positions = [[-0.28, 0.275, -0.28], [0.28, 0.275, -0.28], [-0.28, 0.275, 0.28], [0.28, 0.275, 0.28]];
-        positions.forEach(p => {
-          const leg = new THREE.Mesh(legGeo, metalMat);
-          leg.position.set(...p);
-          leg.castShadow = true;
-          group.add(leg);
-        });
-
-        group.position.set(x, 0, z);
-        group.rotation.y = rotY;
-        scene.add(group);
-      }
-
-      // Colocar un juego de terraza a la izquierda y derecha del camino
-      buildTable(-5, -4);
-      buildChair(-5, -3.1, 0);
-      buildChair(-5, -4.9, Math.PI);
-
-      buildTable(5, 2);
-      buildChair(5, 2.9, Math.PI);
-      buildChair(5, 1.1, 0);
+      buildSet(-6, -4);
+      buildSet(6, 4);
+      buildSet(-7, 8);
     }
 
-    // --------------------------------------------------
-    // Personaje con piernas articuladas
-    // --------------------------------------------------
+    // Personaje con Piernas
     function createPlayer() {
       playerGroup = new THREE.Group();
       scene.add(playerGroup);
       playerGroup.position.set(0, 0, 0);
 
-      const bodyMat = new THREE.MeshStandardMaterial({ color: 0x2563eb, roughness: 0.5 });
+      const shirtMat = new THREE.MeshStandardMaterial({ color: 0x2563eb, roughness: 0.5 });
       const skinMat = new THREE.MeshStandardMaterial({ color: 0xffdbac, roughness: 0.4 });
       const pantsMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.6 });
 
       // Torso
-      const torso = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.7, 0.35), bodyMat);
-      torso.position.y = 1.15;
-      torso.castShadow = true;
+      const torso = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.7, 0.35), shirtMat);
+      torso.position.y = 1.15; torso.castShadow = true;
       playerGroup.add(torso);
 
       // Cabeza
       const head = new THREE.Mesh(new THREE.SphereGeometry(0.24, 20, 20), skinMat);
-      head.position.y = 1.7;
-      head.castShadow = true;
+      head.position.y = 1.7; head.castShadow = true;
       playerGroup.add(head);
 
-      // Pierna Izquierda
+      // Piernas
       leftLeg = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.09, 0.7), pantsMat);
-      leftLeg.position.set(-0.16, 0.45, 0);
-      leftLeg.castShadow = true;
+      leftLeg.position.set(-0.16, 0.45, 0); leftLeg.castShadow = true;
       playerGroup.add(leftLeg);
 
-      // Pierna Derecha
       rightLeg = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.09, 0.7), pantsMat);
-      rightLeg.position.set(0.16, 0.45, 0);
-      rightLeg.castShadow = true;
+      rightLeg.position.set(0.16, 0.45, 0); rightLeg.castShadow = true;
       playerGroup.add(rightLeg);
 
-      // Brazo Izquierdo
-      leftArm = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.07, 0.6), bodyMat);
-      leftArm.position.set(-0.38, 1.1, 0);
-      leftArm.castShadow = true;
+      // Brazos
+      leftArm = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.07, 0.6), shirtMat);
+      leftArm.position.set(-0.38, 1.1, 0); leftArm.castShadow = true;
       playerGroup.add(leftArm);
 
-      // Brazo Derecho (donde va la pulsera)
-      rightArm = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.07, 0.6), bodyMat);
-      rightArm.position.set(0.38, 1.1, 0);
-      rightArm.castShadow = true;
+      rightArm = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.07, 0.6), shirtMat);
+      rightArm.position.set(0.38, 1.1, 0); rightArm.castShadow = true;
       playerGroup.add(rightArm);
     }
 
-    // --------------------------------------------------
-    // Pulsera Asistente
-    // --------------------------------------------------
     function createBracelet() {
       const group = new THREE.Group();
-
       const torus = new THREE.Mesh(
         new THREE.TorusGeometry(0.12, 0.03, 12, 24),
         new THREE.MeshStandardMaterial({ color: 0x00f0ff, metalness: 0.8, roughness: 0.2, emissive: 0x003344, emissiveIntensity: 0.5 })
@@ -424,7 +360,6 @@
       braceletLight.position.set(0, 0.05, 0);
       group.add(braceletLight);
 
-      // Anclar a la muñeca derecha del personaje
       group.position.set(0.38, 0.85, 0);
       playerGroup.add(group);
       braceletMesh = group;
@@ -440,13 +375,12 @@
           stlMesh.position.set(0.38, 0.85, 0);
           playerGroup.add(stlMesh);
         }
-      }, undefined, () => console.log('Modelo STL genérico no disponible, usando modelo integrado.'));
+      }, undefined, () => {});
     }
 
     function interactWithBracelet() {
       hasInteracted = true;
       HINT.classList.add('hidden');
-
       braceletLight.intensity = 10;
       braceletLight.color.setHex(0xffffff);
 
@@ -459,56 +393,51 @@
       setTimeout(() => TOAST.classList.remove('active'), 3500);
     }
 
-    // --------------------------------------------------
-    // Animación y Controles
-    // --------------------------------------------------
+    // Animación y Seguimiento de Cámara
     function animate() {
       renderer.setAnimationLoop(() => {
         const dt = clock.getDelta();
         const t = clock.getElapsedTime();
 
-        controls.update();
         isVR = renderer.xr.isPresenting;
 
         if (playerGroup) {
-          const moveSpeed = 3.2;
-          const rotSpeed = 2.8;
-          let isMoving = false;
+          const moveSpeed = 3.5;
+          let moveX = 0;
+          let moveZ = 0;
 
-          // 1. A / D o Flechas Izquierda / Derecha: GIRO/ORIENTACIÓN del personaje
-          if (keys['a'] || keys['arrowleft']) {
-            playerGroup.rotation.y += rotSpeed * dt;
-          }
-          if (keys['d'] || keys['arrowright']) {
-            playerGroup.rotation.y -= rotSpeed * dt;
-          }
+          // Movimiento Directo (A/D = Izquierda/Derecha, W/S = Adelante/Atrás)
+          if (keys['w'] || keys['arrowup']) moveZ -= moveSpeed * dt;
+          if (keys['s'] || keys['arrowdown']) moveZ += moveSpeed * dt;
+          if (keys['a'] || keys['arrowleft']) moveX -= moveSpeed * dt;
+          if (keys['d'] || keys['arrowright']) moveX += moveSpeed * dt;
 
-          // 2. W / S o Flechas Arriba / Abajo: DESPLAZAMIENTO en la dirección orientada
-          if (keys['w'] || keys['arrowup']) {
-            playerGroup.translateZ(moveSpeed * dt);
-            isMoving = true;
-          }
-          if (keys['s'] || keys['arrowdown']) {
-            playerGroup.translateZ(-moveSpeed * dt);
-            isMoving = true;
-          }
+          if (moveX !== 0 || moveZ !== 0) {
+            playerGroup.position.x += moveX;
+            playerGroup.position.z += moveZ;
 
-          // Animación de caminata de piernas y brazos al presionar W / S
-          if (isMoving) {
-            const walkCycle = Math.sin(t * 10);
+            // Rotación suave del personaje hacia la dirección donde camina
+            const targetAngle = Math.atan2(moveX, moveZ);
+            playerGroup.rotation.y = targetAngle;
+
+            // Animación de caminata
+            const walkCycle = Math.sin(t * 12);
             leftLeg.rotation.x = walkCycle * 0.6;
             rightLeg.rotation.x = -walkCycle * 0.6;
             leftArm.rotation.x = -walkCycle * 0.5;
             rightArm.rotation.x = walkCycle * 0.5;
           } else {
-            // Posición de reposo
-            leftLeg.rotation.x = 0;
-            rightLeg.rotation.x = 0;
-            leftArm.rotation.x = 0;
-            rightArm.rotation.x = 0;
+            leftLeg.rotation.x = 0; rightLeg.rotation.x = 0;
+            leftArm.rotation.x = 0; rightArm.rotation.x = 0;
           }
+
+          // CÁMARA SEGUIDORA DIPLOMÁTICA
+          const targetCamPos = playerGroup.position.clone().add(cameraOffset);
+          camera.position.lerp(targetCamPos, 0.1);
+          controls.target.lerp(playerGroup.position.clone().add(new THREE.Vector3(0, 1.2, 0)), 0.1);
         }
 
+        controls.update();
         renderer.render(scene, camera);
       });
     }
