@@ -38,7 +38,7 @@ Modelado 3D del dispositivo listo para impresión o visualización.
 
 ## 5. Experiencia / Juego Interactivo AR/VR (Arena.ai)
 Integración del modelo 3D en la plataforma Arena.ai para visualización interactiva en Realidad Aumentada / Realidad Mixta (Meta Quest).
-- **Enlace de la experiencia en Arena.ai:** [(https://mateo1290.github.io/dispositivo-alzheimer-cad/s)]
+- **Enlace de la experiencia en Arena.ai:** [https://mateo1290.github.io/dispositivo-alzheimer-cad/]
 - **Prompt utilizado en Arena.ai:** `"Crea un juego interactivo en 3D/WebXR usando Three.js que cargue el modelo 3D de la pulsera 'modelo_dispositivo.stl' (o la representación del dispositivo medico adjunto 'diseno_ia.jpg'). En el juego debe haber un personaje en un entorno 3D que pueda caminar (usando las flechas del teclado o controles de VR) llevando puesta la pulsera médica. El juego debe permitir al usuario interactuar con la pulsera (por ejemplo, presionar el botón de auxilio/sensor para que la pulsera emita luz o un mensaje de asistencia para Alzheimer). Haz que todo el código (HTML, JS, CSS) sea compatible para desplegarse directamente en GitHub Pages"`
 - **Captura / Demostración:**
   ![Juego AR/VR](./imagenes/arena_ai_demo.png)
