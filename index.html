@@ -133,7 +133,7 @@
           <ul>
             <li><span class="key">W</span> <span class="key">A</span> <span class="key">S</span> <span class="key">D</span> — Moverse libremente</li>
             <li><span class="key">Espacio</span> — Saltar (Sube a las mesas)</li>
-            <li><span class="key">Clic Der. + Mover</span> — Rotar Cámara (Roblox)</li>
+            <li><span class="key">Clic Der. + Mover</span> — Cámara Orbital (Roblox)</li>
             <li><span class="key">Rueda Ratón</span> — Zoom</li>
             <li><span class="key">E</span> / <span class="key">Clic Izq.</span> — Activar Pulsera</li>
           </ul>
@@ -171,7 +171,7 @@
     let isVR = false;
     let hasInteracted = false;
 
-    // Colisionadores de mesas
+    // Lista de obstáculos sólidos
     const tables = [];
 
     // Física
@@ -180,9 +180,9 @@
     const jumpStrength = 8.5;
     let isGrounded = true;
 
-    // Cámara Roblox
+    // Control de Cámara Orbital Roblox
     let cameraYaw = 0;
-    let cameraPitch = 0.3;
+    let cameraPitch = 0.35;
     let cameraDistance = 7;
     let isRightMouseDown = false;
 
@@ -256,7 +256,7 @@
         if (isRightMouseDown) {
           cameraYaw -= e.movementX * 0.005;
           cameraPitch += e.movementY * 0.005;
-          cameraPitch = Math.max(-0.2, Math.min(Math.PI / 2 - 0.1, cameraPitch));
+          cameraPitch = Math.max(-0.1, Math.min(Math.PI / 2 - 0.1, cameraPitch));
         }
       });
 
@@ -320,7 +320,6 @@
         group.position.set(x, 0, z);
         scene.add(group);
 
-        // Guardar colisionador de mesa
         tables.push({ x: x, z: z, width: 2.6, depth: 1.6, topY: 1.06 });
       }
 
@@ -448,7 +447,7 @@
       setTimeout(() => TOAST.classList.remove('active'), 3500);
     }
 
-    // Comprobación de altura de piso (Mesas sólidas para pararse arriba)
+    // Calcula si el personaje está parado sobre la superficie de una mesa
     function getGroundHeight(px, pz) {
       let groundH = 0;
       for (let table of tables) {
@@ -464,35 +463,25 @@
       return groundH;
     }
 
-    // Colisión lateral horizontal con las mesas (Estrellarse)
-    function checkCollisionsAndMove(nextX, nextZ, currentY, dt) {
-      let posX = nextX;
-      let posZ = nextZ;
-      const playerRadius = 0.35;
-
+    // Comprueba si una posición propuesta está libre de colisión sólida
+    function canMoveTo(px, pz, py) {
+      const radius = 0.35;
       for (let table of tables) {
-        const minX = table.x - (table.width / 2 + playerRadius);
-        const maxX = table.x + (table.width / 2 + playerRadius);
-        const minZ = table.z - (table.depth / 2 + playerRadius);
-        const maxZ = table.z + (table.depth / 2 + playerRadius);
+        const minX = table.x - (table.width / 2 + radius);
+        const maxX = table.x + (table.width / 2 + radius);
+        const minZ = table.z - (table.depth / 2 + radius);
+        const maxZ = table.z + (table.depth / 2 + radius);
 
-        // Si el personaje está por debajo de la altura superior de la mesa, frena horizontalmente
-        if (currentY < table.topY - 0.15) {
-          if (posX > minX && posX < maxX && posZ > minZ && posZ < maxZ) {
-            const curX = playerGroup.position.x;
-            const curZ = playerGroup.position.z;
-
-            // Bloquear eje que colisiona
-            if (curX <= minX || curX >= maxX) posX = curX;
-            if (curZ <= minZ || curZ >= maxZ) posZ = curZ;
+        // Si el personaje está por debajo de la mesa, no puede atravesar el bloque
+        if (py < table.topY - 0.1) {
+          if (px > minX && px < maxX && pz > minZ && pz < maxZ) {
+            return false;
           }
         }
       }
-      playerGroup.position.x = posX;
-      playerGroup.position.z = posZ;
+      return true;
     }
 
-    // Bucle Principal de Juego
     function animate() {
       renderer.setAnimationLoop(() => {
         const dt = clock.getDelta();
@@ -501,7 +490,7 @@
         isVR = renderer.xr.isPresenting;
 
         if (playerGroup) {
-          // Obtener altura del suelo actual (0 en el césped, o 1.06 sobre una mesa)
+          // Altura del suelo dinámico (Césped 0.0 o Mesa 1.06)
           const targetGroundY = getGroundHeight(playerGroup.position.x, playerGroup.position.z);
 
           // Física de Gravedad y Salto
@@ -523,33 +512,42 @@
           if (keys['a'] || keys['arrowleft']) inputSide -= 1;
           if (keys['d'] || keys['arrowright']) inputSide += 1;
 
-          // Cálculo Vectorial Directo con la vista de la Cámara (Cero errores W/S)
-          const camForward = new THREE.Vector3();
-          camera.getWorldDirection(camForward);
-          camForward.y = 0;
-          camForward.normalize();
+          // MATEMÁTICA DEFINITIVA DE MOVIMIENTO RELATIVO A LA CÁMARA
+          // Determinar la dirección a la que mira la cámara en el plano horizontal (XZ)
+          const camForward = new THREE.Vector3(
+            playerGroup.position.x - camera.position.x,
+            0,
+            playerGroup.position.z - camera.position.z
+          ).normalize();
 
-          const camRight = new THREE.Vector3();
-          camRight.crossVectors(camForward, new THREE.Vector3(0, 1, 0)).normalize();
+          const camRight = new THREE.Vector3().crossVectors(camForward, new THREE.Vector3(0, 1, 0)).normalize();
 
-          let moveVector = new THREE.Vector3(0, 0, 0);
-          if (inputForward !== 0) moveVector.addScaledVector(camForward, inputForward);
-          if (inputSide !== 0) moveVector.addScaledVector(camRight, inputSide);
+          const moveDir = new THREE.Vector3(0, 0, 0);
+          if (inputForward !== 0) moveDir.addScaledVector(camForward, inputForward);
+          if (inputSide !== 0) moveDir.addScaledVector(camRight, inputSide);
 
-          if (moveVector.lengthSq() > 0) {
-            moveVector.normalize();
+          if (moveDir.lengthSq() > 0) {
+            moveDir.normalize();
 
-            const nextX = playerGroup.position.x + moveVector.x * moveSpeed * dt;
-            const nextZ = playerGroup.position.z + moveVector.z * moveSpeed * dt;
+            const deltaX = moveDir.x * moveSpeed * dt;
+            const deltaZ = moveDir.z * moveSpeed * dt;
 
-            // Aplicar movimiento con colisiones
-            checkCollisionsAndMove(nextX, nextZ, playerGroup.position.y, dt);
+            const curX = playerGroup.position.x;
+            const curZ = playerGroup.position.z;
+            const curY = playerGroup.position.y;
 
-            // Orientar personaje hacia donde camina
-            const walkAngle = Math.atan2(moveVector.x, moveVector.z);
-            playerGroup.rotation.y = walkAngle;
+            // Intentar mover eje X e Y de forma independiente para permitir deslizamiento
+            if (canMoveTo(curX + deltaX, curZ, curY)) {
+              playerGroup.position.x += deltaX;
+            }
+            if (canMoveTo(playerGroup.position.x, curZ + deltaZ, curY)) {
+              playerGroup.position.z += deltaZ;
+            }
 
-            // Animación caminata
+            // Rotar suavemente el personaje mirando hacia donde camina
+            playerGroup.rotation.y = Math.atan2(moveDir.x, moveDir.z);
+
+            // Animación de caminata
             const walkCycle = Math.sin(t * 14);
             leftLeg.rotation.x = walkCycle * 0.65;
             rightLeg.rotation.x = -walkCycle * 0.65;
@@ -560,32 +558,36 @@
             leftArm.rotation.x = 0; rightArm.rotation.x = 0;
           }
 
-          // TITILADO ROJO DE ALERTA DE PROXIMIDAD A LAS MESAS
-          let isNearObstacle = false;
+          // DETECCIÓN DE PROXIMIDAD A LAS MESAS (TITILADO ROJO DE ALERTA)
+          let isNearTable = false;
           for (let table of tables) {
             const dx = playerGroup.position.x - table.x;
             const dz = playerGroup.position.z - table.z;
             const dist = Math.sqrt(dx * dx + dz * dz);
-            if (dist < 2.8) {
-              isNearObstacle = true;
+            if (dist < 2.4) {
+              isNearTable = true;
               break;
             }
           }
 
-          if (isNearObstacle) {
-            const blink = Math.sin(t * 16) > 0;
+          if (isNearTable) {
+            const blink = Math.sin(t * 18) > 0;
             braceletLight.color.setHex(0xff0000);
-            braceletLight.intensity = blink ? 8 : 0.5;
-            braceletTorus.material.emissive.setHex(blink ? 0xff0000 : 0x330000);
-            braceletTorus.material.color.setHex(blink ? 0xff3333 : 0x880000);
+            braceletLight.intensity = blink ? 10 : 1;
+            if (braceletTorus && braceletTorus.material) {
+              braceletTorus.material.color.setHex(blink ? 0xff0000 : 0x550000);
+              braceletTorus.material.emissive.setHex(blink ? 0xff0000 : 0x330000);
+            }
           } else {
             braceletLight.color.setHex(0x00f0ff);
-            braceletLight.intensity = hasInteracted ? 3 : 0;
-            braceletTorus.material.emissive.setHex(0x003344);
-            braceletTorus.material.color.setHex(0x00f0ff);
+            braceletLight.intensity = hasInteracted ? 3 : 0.5;
+            if (braceletTorus && braceletTorus.material) {
+              braceletTorus.material.color.setHex(0x00f0ff);
+              braceletTorus.material.emissive.setHex(0x003344);
+            }
           }
 
-          // Posicionamiento dinámico de la Cámara estilo Roblox
+          // CÁMARA ORBITAL ESTILO ROBLOX
           const targetY = playerGroup.position.y + 1.2;
           const offsetX = cameraDistance * Math.sin(cameraYaw) * Math.cos(cameraPitch);
           const offsetY = cameraDistance * Math.sin(cameraPitch);
