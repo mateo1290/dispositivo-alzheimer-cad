@@ -17,7 +17,7 @@
 ## 2. Diseño a Mano del Proyecto
 Boceto individual realizado a mano para la carcasa y distribución de componentes del dispositivo.
 - **Imagen:**
-  ![Diseño a Mano](./imagenes/diseno_mano.jpg)
+  ![Diseño a Mano](./diseno_mano.jpeg)
 
 ---
 
@@ -25,7 +25,7 @@ Boceto individual realizado a mano para la carcasa y distribución de componente
 Rediseño conceptual generado a partir del boceto a mano mediante prompt de IA.
 - **Prompt utilizado:** `"Genera una carcasa ergonómica, estética e industrial para un dispositivo médico portátil enfocado en pacientes con Alzheimer..."`
 - **Imagen generada:**
-  ![Rediseño IA](./imagenes/diseno_ia.png)
+  ![Rediseño IA](./diseno_ia.jpg)
 
 ---
 
@@ -33,7 +33,7 @@ Rediseño conceptual generado a partir del boceto a mano mediante prompt de IA.
 Modelado 3D del dispositivo listo para impresión o visualización.
 - **Archivos 3D subidos:** `modelo_dispositivo.stl` / `modelo_dispositivo.gbl`
 - **Visualizador online utilizado:** [3D Viewer Online](https://3dviewer.net)
-
+![Visualización 3D](./vista_3d.png)
 ---
 
 ## 5. Experiencia / Juego Interactivo AR/VR (Arena.ai)
