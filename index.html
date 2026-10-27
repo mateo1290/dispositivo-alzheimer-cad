@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dispositivo Asistente de Orientación y Monitoreo — Alzheimer</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+  <style>
+    :root { --primary:#1b3a4b; --accent:#4f9caf; --bg:#f6f9fb; --surface:#fff; --text:#222; --muted:#556; --radius:16px; --shadow:0 12px 40px rgba(27,58,75,0.08); }
+    * { box-sizing:border-box; margin:0; padding:0; }
+    body { font-family:'Inter',system-ui,sans-serif; background:var(--bg); color:var(--text); line-height:1.55; }
+    header { background:linear-gradient(135deg,#11323d 0%,#1b4a5f 100%); color:#fff; padding:80px 20px 100px; text-align:center; position:relative; overflow:hidden; }
+    header::after { content:''; position:absolute; inset:0; background:url('data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'none\' fill-rule=\'evenodd\'%3E%3Cg fill=\'%23ffffff\' fill-opacity=\'0.05\'%3E%3Cpath d=\'M36 34v-4h-2v4h-2v2h2v4h2v-4h2v-2h-2zm0-30V0h-2v4h-2v2h2v4h2V6h2V4h-2z\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E'); pointer-events:none; }
+    header h1 { font-family:'Playfair Display',Georgia,serif; font-size:clamp(2.2rem,5vw,3.6rem); letter-spacing:-0.03em; margin-bottom:12px; position:relative; z-index:1; }
+    header .subtitle { max-width:640px; margin:0 auto; opacity:0.85; font-size:1.05rem; position:relative; z-index:1; }
+    .badge { display:inline-block; background:rgba(255,255,255,0.12); border:1px solid rgba(255,255,255,0.2); border-radius:999px; padding:6px 14px; font-size:0.8rem; margin-top:24px; position:relative; z-index:1; letter-spacing:0.04em; text-transform:uppercase; }
+    main { max-width:980px; margin:-60px auto 0; padding:0 20px 100px; position:relative; z-index:2; }
+    .card { background:var(--surface); border-radius:var(--radius); box-shadow:var(--shadow); padding:36px; margin-bottom:28px; border:1px solid rgba(0,0,0,0.04); }
+    .card h2 { font-family:'Playfair Display',Georgia,serif; font-size:1.6rem; color:var(--primary); margin-bottom:16px; display:flex; align-items:center; gap:12px; }
+    .card h2 .num { width:32px; height:32px; display:inline-flex; align-items:center; justify-content:center; background:var(--accent); color:#fff; border-radius:50%; font-size:0.85rem; font-family:'Inter',sans-serif; font-weight:800; flex-shrink:0; }
+    .card img { width:100%; border-radius:12px; border:1px solid rgba(0,0,0,0.06); object-fit:cover; margin-top:16px; }
+    .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:16px; margin-top:16px; }
+    .grid img { height:220px; object-fit:cover; transition:transform .2s ease; }
+    .grid img:hover { transform:scale(1.01); }
+    a { color:var(--accent); text-decoration:none; font-weight:600; }
+    a:hover { text-decoration:underline; }
+    .meta { color:var(--muted); font-size:0.95rem; margin-top:4px; }
+    .section-divider { height:2px; width:48px; background:var(--accent); border-radius:999px; margin:8px 0 20px; }
+    footer { text-align:center; padding:40px 20px; color:var(--muted); font-size:0.85rem; border-top:1px solid rgba(0,0,0,0.06); }
+    @media (max-width: 640px) { .card { padding:24px; } header { padding:60px 20px 80px; } }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="badge">Entrega V — Diseño CAD + Juego AR/VR</div>
+    <h1>Dispositivo Asistente de Orientación y Monitoreo para Pacientes con Alzheimer</h1>
+    <p class="subtitle">Proyecto de diseño electrónico que integra modelado CAD, impresión 3D, rediseño con IA y una experiencia interactiva en realidad mixta.</p>
+  </header>
+
+  <main>
+    <section class="card">
+      <h2><span class="num">01</span> Caja Generada en MakerCase (Dummie)</h2>
+      <div class="section-divider"></div>
+      <p><strong>Dimensiones:</strong> 80 mm × 50 mm × 30 mm</p>
+      <p><strong>Peso estimado:</strong> 150 g</p>
+      <p><strong>Archivos:</strong> <a href="caja_makercase.svg">caja_makercase.svg</a> / <a href="caja_makercase.dxf">caja_makercase.dxf</a></p>
+      <img src="imagenes/makercase_dummie.png" alt="Dummie MakerCase" loading="lazy" />
+    </section>
+
+    <section class="card">
+      <h2><span class="num">02</span> Diseño a Mano del Proyecto</h2>
+      <div class="section-divider"></div>
+      <p>Boceto individual realizado a mano para la carcasa y distribución de componentes del dispositivo asistente.</p>
+      <img src="imagenes/diseno_mano.jpg" alt="Diseño a Mano" loading="lazy" />
+    </section>
+
+    <section class="card">
+      <h2><span class="num">03</span> Rediseño con Inteligencia Artificial</h2>
+      <div class="section-divider"></div>
+      <p><strong>Prompt utilizado:</strong> <em>"Genera una carcasa ergonómica, estética e industrial para un dispositivo médico portátil enfocado en pacientes con Alzheimer..."</em></p>
+      <img src="imagenes/diseno_ia.png" alt="Rediseño IA" loading="lazy" />
+    </section>
+
+    <section class="card">
+      <h2><span class="num">04</span> Modelo 3D</h2>
+      <div class="section-divider"></div>
+      <p>Modelado 3D del dispositivo listo para impresión o visualización.</p>
+      <ul style="margin-top:8px; padding-left:18px; color:var(--muted);">
+        <li><a href="modelo_dispositivo.stl">modelo_dispositivo.stl</a></li>
+        <li><a href="modelo_dispositivo.gbl">modelo_dispositivo.gbl</a></li>
+        <li>Visualizador online: <a href="https://3dviewer.net" target="_blank" rel="noopener">3D Viewer Online</a></li>
+      </ul>
+    </section>
+
+    <section class="card">
+      <h2><span class="num">05</span> Experiencia / Juego Interactivo AR/VR</h2>
+      <div class="section-divider"></div>
+      <p>Integración del modelo 3D en Arena.ai para visualización interactiva en Realidad Aumentada / Realidad Mixta (Meta Quest).</p>
+      <p><strong>Prompt utilizado:</strong> <em>"Quiero un juego interactivo de merged reality o mixed reality de la silla de ruedas/asistente adjunto. El juego debe permitir jugar con el dispositivo y que se genere una respuesta a la interacción del humano y al entorno generado donde interactúa"</em></p>
+      <p><strong>Enlace Arena.ai:</strong> <a href="#" onclick="alert('Configuración pendiente: agregar enlace de Arena.ai'); return false;">[Enlace pendiente]</a></p>
+      <img src="imagenes/arena_ai_demo.png" alt="Juego AR/VR" loading="lazy" />
+    </section>
+  </main>
+
+  <footer>
+    <p>Estudiante: Mateo Jiménez · Curso: Diseño Electrónico · <a href="README.md">Ver README.md</a></p>
+  </footer>
+</body>
+</html>
