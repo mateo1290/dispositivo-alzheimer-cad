@@ -367,9 +367,6 @@
     // Bracelet / Medical Device
     // --------------------------------------------------
     function createBracelet() {
-      // Since modelo_dispositivo.stl is a placeholder, we build a geometric bracelet
-      // representing the medical device. It includes a torus band + sensor box + glow.
-
       const group = new THREE.Group();
 
       // Main band (torus)
@@ -418,7 +415,7 @@
       // Add a label plane showing the device image reference
       const labelGeo = new THREE.PlaneGeometry(0.35, 0.18);
       const textureLoader = new THREE.TextureLoader();
-      const labelTexture = textureLoader.load('imagenes/diseno_ia.png');
+      const labelTexture = textureLoader.load('diseno_ia.jpg');
       labelTexture.colorSpace = THREE.SRGBColorSpace;
       const labelMat = new THREE.MeshStandardMaterial({ map: labelTexture, roughness: 0.3, metalness: 0.1, transparent: true, opacity: 0.9 });
       const label = new THREE.Mesh(labelGeo, labelMat);
@@ -442,7 +439,6 @@
     function tryLoadSTL() {
       const loader = new STLLoader();
       loader.load('modelo_dispositivo.stl', (geometry) => {
-        // If STL loaded successfully and has vertices, replace bracelet mesh with it
         if (geometry && geometry.attributes && geometry.attributes.position && geometry.attributes.position.count > 0) {
           const mat = new THREE.MeshStandardMaterial({ color: 0x00f0ff, roughness: 0.25, metalness: 0.6, emissive: 0x001122, emissiveIntensity: 0.4 });
           const stlMesh = new THREE.Mesh(geometry, mat);
@@ -450,7 +446,7 @@
           stlMesh.rotation.x = -Math.PI / 2;
           stlMesh.position.set(0, 0, 0);
           stlMesh.castShadow = true;
-          // Replace geometric bracelet (keep group wrapper for light)
+          
           const parent = braceletMesh.parent;
           const pos = braceletMesh.position.clone();
           const rot = braceletMesh.rotation.clone();
@@ -471,13 +467,7 @@
     // Interaction
     // --------------------------------------------------
     function interactWithBracelet() {
-      if (isVR) {
-        // In VR, interaction is via controller or proximity; use a simple trigger
-        // We'll simulate interaction if user presses 'E' or clicks
-        triggerBraceletEffect();
-      } else {
-        triggerBraceletEffect();
-      }
+      triggerBraceletEffect();
     }
 
     function triggerBraceletEffect() {
@@ -530,15 +520,10 @@
 
         // Character movement (keyboard)
         if (playerGroup) {
-          const speed = 2.5;
+          const speed = 3.0;
           const rotSpeed = 2.5;
 
-          if (keys['w'] || keys['arrowup']) {
-            playerGroup.translateZ(speed * dt);
-          }
-          if (keys['s'] || keys['arrowdown']) {
-            playerGroup.translateZ(-speed * dt);
-          }
+          // 1. Girar el personaje
           if (keys['a'] || keys['arrowleft']) {
             playerGroup.rotation.y += rotSpeed * dt;
           }
@@ -546,11 +531,13 @@
             playerGroup.rotation.y -= rotSpeed * dt;
           }
 
-          // Make character face movement direction roughly
-          if (keys['w'] || keys['arrowup']) playerGroup.rotation.y = 0 + (keys['a'] ? 0.5 : 0) + (keys['d'] ? -0.5 : 0);
-          else if (keys['s'] || keys['arrowdown']) playerGroup.rotation.y = Math.PI;
-          else if (keys['a'] || keys['arrowleft']) playerGroup.rotation.y = Math.PI / 2;
-          else if (keys['d'] || keys['arrowright']) playerGroup.rotation.y = -Math.PI / 2;
+          // 2. Avanzar o retroceder en la dirección hacia la que mira el personaje
+          if (keys['w'] || keys['arrowup']) {
+            playerGroup.translateZ(speed * dt);
+          }
+          if (keys['s'] || keys['arrowdown']) {
+            playerGroup.translateZ(-speed * dt);
+          }
         }
 
         // Floating bracelet animation (idle)
