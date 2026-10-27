@@ -132,9 +132,9 @@
           <h3>Controles</h3>
           <ul>
             <li><span class="key">W</span> <span class="key">A</span> <span class="key">S</span> <span class="key">D</span> — Moverse libremente</li>
-            <li><span class="key">Espacio</span> — Saltar</li>
-            <li><span class="key">Clic Der. + Mover</span> — Rotar Cámara (Estilo Roblox)</li>
-            <li><span class="key">Rueda Ratón</span> — Zoom Cámara</li>
+            <li><span class="key">Espacio</span> — Saltar (Sube a las mesas)</li>
+            <li><span class="key">Clic Der. + Mover</span> — Rotar Cámara (Roblox)</li>
+            <li><span class="key">Rueda Ratón</span> — Zoom</li>
             <li><span class="key">E</span> / <span class="key">Clic Izq.</span> — Activar Pulsera</li>
           </ul>
         </div>
@@ -166,18 +166,21 @@
     let scene, camera, renderer;
     let clock = new THREE.Clock();
     let playerGroup, leftLeg, rightLeg, leftArm, rightArm;
-    let braceletMesh, braceletLight;
+    let braceletMesh, braceletLight, braceletTorus;
     let keys = {};
     let isVR = false;
     let hasInteracted = false;
 
-    // Física de salto
+    // Colisionadores de mesas
+    const tables = [];
+
+    // Física
     let velocityY = 0;
-    const gravity = -20;
+    const gravity = -22;
     const jumpStrength = 8.5;
     let isGrounded = true;
 
-    // Control de cámara estilo Roblox
+    // Cámara Roblox
     let cameraYaw = 0;
     let cameraPitch = 0.3;
     let cameraDistance = 7;
@@ -189,15 +192,12 @@
     function init() {
       document.addEventListener('contextmenu', e => e.preventDefault());
 
-      // Cielo Azul claro
       scene = new THREE.Scene();
       scene.background = new THREE.Color(0x70c5ce);
       scene.fog = new THREE.FogExp2(0x70c5ce, 0.008);
 
-      // Cámara
       camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 200);
 
-      // Renderer
       renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
       renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
       renderer.setSize(window.innerWidth, window.innerHeight);
@@ -206,7 +206,6 @@
       renderer.xr.enabled = true;
       CANVAS_CONTAINER.appendChild(renderer.domElement);
 
-      // Iluminación Solar
       const ambient = new THREE.AmbientLight(0xffffff, 0.85);
       scene.add(ambient);
 
@@ -222,24 +221,17 @@
       sun.shadow.camera.top = d; sun.shadow.camera.bottom = -d;
       scene.add(sun);
 
-      // Entorno
       createGrassFloor();
       createFurniture();
       createTrees();
-
-      // Personaje
       createPlayer();
-
-      // Pulsera
       createBracelet();
       tryLoadSTL();
 
-      // VR Button
       const vrBtn = VRButton.createButton(renderer);
       vrBtn.id = 'vr-button';
       document.body.appendChild(vrBtn);
 
-      // Eventos
       window.addEventListener('resize', onResize, false);
       
       window.addEventListener('keydown', (e) => {
@@ -251,7 +243,6 @@
       });
       window.addEventListener('keyup', (e) => keys[e.key.toLowerCase()] = false);
 
-      // Controles de Cámara y Ratón
       window.addEventListener('mousedown', (e) => {
         if (e.button === 2) isRightMouseDown = true;
         if (e.button === 0 && !isVR) interactWithBracelet();
@@ -300,18 +291,18 @@
 
       function buildSet(x, z) {
         const group = new THREE.Group();
-        const top = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.12, 1.4), woodMat);
+        const top = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.12, 1.6), woodMat);
         top.position.y = 1.0; top.castShadow = true; top.receiveShadow = true;
         group.add(top);
 
         const legGeo = new THREE.CylinderGeometry(0.05, 0.05, 1.0);
-        [[-1, 0.5, -0.5], [1, 0.5, -0.5], [-1, 0.5, 0.5], [1, 0.5, 0.5]].forEach(p => {
+        [[-1.1, 0.5, -0.6], [1.1, 0.5, -0.6], [-1.1, 0.5, 0.6], [1.1, 0.5, 0.6]].forEach(p => {
           const leg = new THREE.Mesh(legGeo, metalMat);
           leg.position.set(...p); leg.castShadow = true;
           group.add(leg);
         });
 
-        [-0.9, 0.9].forEach(offset => {
+        [-1.0, 1.0].forEach(offset => {
           const chair = new THREE.Group();
           const seat = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.08, 0.6), woodMat);
           seat.position.y = 0.55; seat.castShadow = true; chair.add(seat);
@@ -328,6 +319,9 @@
 
         group.position.set(x, 0, z);
         scene.add(group);
+
+        // Guardar colisionador de mesa
+        tables.push({ x: x, z: z, width: 2.6, depth: 1.6, topY: 1.06 });
       }
 
       const positions = [
@@ -376,17 +370,14 @@
       const skinMat = new THREE.MeshStandardMaterial({ color: 0xffdbac, roughness: 0.4 });
       const pantsMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.6 });
 
-      // Torso
       const torso = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.7, 0.35), shirtMat);
       torso.position.y = 1.15; torso.castShadow = true;
       playerGroup.add(torso);
 
-      // Cabeza
       const head = new THREE.Mesh(new THREE.SphereGeometry(0.24, 20, 20), skinMat);
       head.position.y = 1.7; head.castShadow = true;
       playerGroup.add(head);
 
-      // Piernas
       leftLeg = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.09, 0.7), pantsMat);
       leftLeg.position.set(-0.16, 0.45, 0); leftLeg.castShadow = true;
       playerGroup.add(leftLeg);
@@ -395,7 +386,6 @@
       rightLeg.position.set(0.16, 0.45, 0); rightLeg.castShadow = true;
       playerGroup.add(rightLeg);
 
-      // Brazos
       leftArm = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.07, 0.6), shirtMat);
       leftArm.position.set(-0.38, 1.1, 0); leftArm.castShadow = true;
       playerGroup.add(leftArm);
@@ -407,12 +397,12 @@
 
     function createBracelet() {
       const group = new THREE.Group();
-      const torus = new THREE.Mesh(
+      braceletTorus = new THREE.Mesh(
         new THREE.TorusGeometry(0.12, 0.03, 12, 24),
         new THREE.MeshStandardMaterial({ color: 0x00f0ff, metalness: 0.8, roughness: 0.2, emissive: 0x003344, emissiveIntensity: 0.5 })
       );
-      torus.rotation.x = Math.PI / 2;
-      group.add(torus);
+      braceletTorus.rotation.x = Math.PI / 2;
+      group.add(braceletTorus);
 
       const sensor = new THREE.Mesh(
         new THREE.BoxGeometry(0.08, 0.04, 0.08),
@@ -458,6 +448,51 @@
       setTimeout(() => TOAST.classList.remove('active'), 3500);
     }
 
+    // Comprobación de altura de piso (Mesas sólidas para pararse arriba)
+    function getGroundHeight(px, pz) {
+      let groundH = 0;
+      for (let table of tables) {
+        const minX = table.x - table.width / 2;
+        const maxX = table.x + table.width / 2;
+        const minZ = table.z - table.depth / 2;
+        const maxZ = table.z + table.depth / 2;
+
+        if (px >= minX && px <= maxX && pz >= minZ && pz <= maxZ) {
+          if (table.topY > groundH) groundH = table.topY;
+        }
+      }
+      return groundH;
+    }
+
+    // Colisión lateral horizontal con las mesas (Estrellarse)
+    function checkCollisionsAndMove(nextX, nextZ, currentY, dt) {
+      let posX = nextX;
+      let posZ = nextZ;
+      const playerRadius = 0.35;
+
+      for (let table of tables) {
+        const minX = table.x - (table.width / 2 + playerRadius);
+        const maxX = table.x + (table.width / 2 + playerRadius);
+        const minZ = table.z - (table.depth / 2 + playerRadius);
+        const maxZ = table.z + (table.depth / 2 + playerRadius);
+
+        // Si el personaje está por debajo de la altura superior de la mesa, frena horizontalmente
+        if (currentY < table.topY - 0.15) {
+          if (posX > minX && posX < maxX && posZ > minZ && posZ < maxZ) {
+            const curX = playerGroup.position.x;
+            const curZ = playerGroup.position.z;
+
+            // Bloquear eje que colisiona
+            if (curX <= minX || curX >= maxX) posX = curX;
+            if (curZ <= minZ || curZ >= maxZ) posZ = curZ;
+          }
+        }
+      }
+      playerGroup.position.x = posX;
+      playerGroup.position.z = posZ;
+    }
+
+    // Bucle Principal de Juego
     function animate() {
       renderer.setAnimationLoop(() => {
         const dt = clock.getDelta();
@@ -466,12 +501,15 @@
         isVR = renderer.xr.isPresenting;
 
         if (playerGroup) {
+          // Obtener altura del suelo actual (0 en el césped, o 1.06 sobre una mesa)
+          const targetGroundY = getGroundHeight(playerGroup.position.x, playerGroup.position.z);
+
           // Física de Gravedad y Salto
           velocityY += gravity * dt;
           playerGroup.position.y += velocityY * dt;
 
-          if (playerGroup.position.y <= 0) {
-            playerGroup.position.y = 0;
+          if (playerGroup.position.y <= targetGroundY) {
+            playerGroup.position.y = targetGroundY;
             velocityY = 0;
             isGrounded = true;
           }
@@ -480,25 +518,38 @@
           let inputForward = 0;
           let inputSide = 0;
 
-          // CORRECCIÓN DE DIRECCIÓN: W = AVANZAR (+1), S = RETROCEDER (-1)
           if (keys['w'] || keys['arrowup']) inputForward += 1;
           if (keys['s'] || keys['arrowdown']) inputForward -= 1;
           if (keys['a'] || keys['arrowleft']) inputSide -= 1;
           if (keys['d'] || keys['arrowright']) inputSide += 1;
 
-          if (inputForward !== 0 || inputSide !== 0) {
-            // Ángulo en el plano XZ relativo a la orientación actual de la cámara
-            const moveAngle = Math.atan2(inputSide, inputForward);
-            const finalAngle = cameraYaw + moveAngle;
+          // Cálculo Vectorial Directo con la vista de la Cámara (Cero errores W/S)
+          const camForward = new THREE.Vector3();
+          camera.getWorldDirection(camForward);
+          camForward.y = 0;
+          camForward.normalize();
 
-            // Mover personaje en la dirección elegida
-            playerGroup.position.x += Math.sin(finalAngle) * moveSpeed * dt;
-            playerGroup.position.z += Math.cos(finalAngle) * moveSpeed * dt;
+          const camRight = new THREE.Vector3();
+          camRight.crossVectors(camForward, new THREE.Vector3(0, 1, 0)).normalize();
+
+          let moveVector = new THREE.Vector3(0, 0, 0);
+          if (inputForward !== 0) moveVector.addScaledVector(camForward, inputForward);
+          if (inputSide !== 0) moveVector.addScaledVector(camRight, inputSide);
+
+          if (moveVector.lengthSq() > 0) {
+            moveVector.normalize();
+
+            const nextX = playerGroup.position.x + moveVector.x * moveSpeed * dt;
+            const nextZ = playerGroup.position.z + moveVector.z * moveSpeed * dt;
+
+            // Aplicar movimiento con colisiones
+            checkCollisionsAndMove(nextX, nextZ, playerGroup.position.y, dt);
 
             // Orientar personaje hacia donde camina
-            playerGroup.rotation.y = finalAngle;
+            const walkAngle = Math.atan2(moveVector.x, moveVector.z);
+            playerGroup.rotation.y = walkAngle;
 
-            // Animación de caminata
+            // Animación caminata
             const walkCycle = Math.sin(t * 14);
             leftLeg.rotation.x = walkCycle * 0.65;
             rightLeg.rotation.x = -walkCycle * 0.65;
@@ -509,7 +560,32 @@
             leftArm.rotation.x = 0; rightArm.rotation.x = 0;
           }
 
-          // Posicionar cámara detrás del personaje según cameraYaw, cameraPitch y cameraDistance
+          // TITILADO ROJO DE ALERTA DE PROXIMIDAD A LAS MESAS
+          let isNearObstacle = false;
+          for (let table of tables) {
+            const dx = playerGroup.position.x - table.x;
+            const dz = playerGroup.position.z - table.z;
+            const dist = Math.sqrt(dx * dx + dz * dz);
+            if (dist < 2.8) {
+              isNearObstacle = true;
+              break;
+            }
+          }
+
+          if (isNearObstacle) {
+            const blink = Math.sin(t * 16) > 0;
+            braceletLight.color.setHex(0xff0000);
+            braceletLight.intensity = blink ? 8 : 0.5;
+            braceletTorus.material.emissive.setHex(blink ? 0xff0000 : 0x330000);
+            braceletTorus.material.color.setHex(blink ? 0xff3333 : 0x880000);
+          } else {
+            braceletLight.color.setHex(0x00f0ff);
+            braceletLight.intensity = hasInteracted ? 3 : 0;
+            braceletTorus.material.emissive.setHex(0x003344);
+            braceletTorus.material.color.setHex(0x00f0ff);
+          }
+
+          // Posicionamiento dinámico de la Cámara estilo Roblox
           const targetY = playerGroup.position.y + 1.2;
           const offsetX = cameraDistance * Math.sin(cameraYaw) * Math.cos(cameraPitch);
           const offsetY = cameraDistance * Math.sin(cameraPitch);
